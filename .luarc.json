@@ -1,0 +1,28 @@
+{
+    "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+    "runtime.version": "Lua 5.4",
+    "runtime.path": [
+        "autorun/?.lua",
+        "autorun/?/init.lua"
+    ],
+    "diagnostics.globals": [
+        "sdk",
+        "re",
+        "imgui",
+        "log",
+        "json",
+        "draw",
+        "fs",
+        "d2d"
+    ],
+    "diagnostics.disable": [
+        "lowercase-global"
+    ],
+    "workspace.checkThirdParty": false,
+    "workspace.ignoreDir": [
+        ".git",
+        ".gitnexus",
+        ".omc",
+        "docs"
+    ]
+}

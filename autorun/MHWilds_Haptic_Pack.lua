@@ -19,395 +19,9 @@
 local VERSION = "1.1.0"
 log.info("[HapticPack] Loading v" .. VERSION)
 
--- =============================================
--- LANGUAGE: English (default) / Tiếng Việt — switch in the menu, saved to the json file.
--- Source strings are English; VI holds the Vietnamese translations.
--- =============================================
-local LANG = "en"
-local VI = {}   -- filled at the end of this section
-local function tr(s)
-    if LANG ~= "vi" or type(s) ~= "string" then return s end
-    return VI[s] or s
-end
--- string.format that also translates the format string and any string arguments
-local function fmt(f, ...)
-    if LANG ~= "vi" then return string.format(f, ...) end
-    local n = select("#", ...)
-    local a = { ... }
-    for k = 1, n do if type(a[k]) == "string" then a[k] = tr(a[k]) end end
-    return string.format(tr(f), table.unpack(a, 1, n))
-end
--- imgui wrapper: translates widget labels (the part before "##") and combo options
-local _imgui = imgui
-local function tl(s)
-    if LANG ~= "vi" or type(s) ~= "string" then return s end
-    local w = VI[s]
-    if w then return w end
-    local vis, id = s:match("^(.-)(##.*)$")
-    if vis then
-        w = VI[vis]
-        if w then return w .. id end
-        local id2 = id:match("^(##%a+)")          -- key stored with its id ("...##ev") + a runtime number
-        if id2 then
-            w = VI[vis .. id2]
-            if w then return w .. id:sub(#id2 + 1) end
-        end
-    end
-    return s
-end
-local function tl_list(t)
-    if LANG ~= "vi" then return t end
-    local o = {}
-    for k, v in ipairs(t) do o[k] = tl(v) end
-    return o
-end
-local imgui = setmetatable({
-    text = function(s) return _imgui.text(tl(s)) end,
-    button = function(s, ...) return _imgui.button(tl(s), ...) end,
-    checkbox = function(s, ...) return _imgui.checkbox(tl(s), ...) end,
-    slider_float = function(s, ...) return _imgui.slider_float(tl(s), ...) end,
-    combo = function(s, i, opts) return _imgui.combo(tl(s), i, tl_list(opts)) end,
-    tree_node = function(s) return _imgui.tree_node(tl(s)) end,
-}, { __index = _imgui })
--- Vietnamese translations (key = the English text used in this file)
-VI = {
-    ["Test: vibration"] = "Test: rung",
-    ["  USB cable: the game plays its own haptics, the plugin stays idle."] = "  Cắm dây USB: game tự phát haptic, plugin đứng yên.",
-    ["Log for bug reports: reframework/data/MHWHapticBT.log"] = "Log để báo lỗi: reframework/data/MHWHapticBT.log",
-    ["BT: game haptics"] = "BT: haptic của game",
-    ["Off (only the mod's weapon effects)"] = "Tắt (chỉ hiệu ứng vũ khí của mod)",
-    ["By name: hits, charges, guards (recommended)"] = "Theo tên: trúng đòn, tụ lực, đỡ (khuyên dùng)",
-    ["Legacy: game's own rumble (everything vibrates)"] = "Kiểu cũ: rung gốc của game (cái gì cũng rung)",
-    ["Reset Bluetooth settings to defaults"] = "Đặt lại cài đặt Bluetooth về mặc định",
-    ["BT: L2 trigger"] = "BT: cò L2",
-    ["Free (Focus Mode stays light)"] = "Tự do (Focus Mode nhẹ tay)",
-    ["Game effects, light"] = "Hiệu ứng của game, nhẹ",
-    ["Game effects, full force"] = "Hiệu ứng của game, đủ lực",
-    ["BT: fade-out between hits (ms)"] = "BT: thời gian tắt dần giữa các cú (ms)",
-    ["BT: strength curve (higher = weak and strong closer)"] = "BT: đường cong lực (cao = nhẹ và mạnh gần nhau hơn)",
-    ["Research: log every weapon field change (re2_framework_log.txt)"] = "Nghiên cứu: ghi mọi thay đổi field vũ khí vào log (re2_framework_log.txt)",
-    ["Record weapon fields for 60 s (close the menu and play)"] = "Ghi field vũ khí 60 giây (đóng menu rồi đánh)",
-    ["  RECORDING %s... %.0f s left - do the weapon's moves now"] = "  ĐANG GHI %s... còn %.0f s - ra các chiêu của vũ khí đi",
-    ["Save haptic catalog (research)"] = "Lưu danh mục haptic (nghiên cứu)",
-    ["  Haptic catalog: %d different game haptics seen (auto-saved every 30 s)"] = "  Danh mục haptic: đã gặp %d loại haptic của game (tự lưu mỗi 30 giây)",
-    ["BT: experimental header 0xF2 (research - haptics went silent with it)"] = "BT: header thử nghiệm 0xF2 (nghiên cứu - từng làm mất haptic)",
-    ["BT: haptic waveform"] = "BT: kiểu sóng haptic",
-    ["Classic (1.1.1)"] = "Cổ điển (1.1.1)",
-    ["Punchy (0.1.4)"] = "Gắt (0.1.4)",
-    ["Optimized (recommended)"] = "Tối ưu (khuyên dùng)",
-    ["BT: keep haptic stream alive (ms after last hit)"] = "BT: giữ luồng haptic chạy (ms sau cú rung cuối)",
-    ["BT: silent pre-roll packets"] = "BT: số gói im lặng đệm trước",
-    ["Test: trigger wall 3 s (hold R2/L2)"] = "Test: tường cò 3 giây (bóp R2/L2)",
-    ["  ! 'BT: send adaptive triggers too' is OFF - game triggers are not sent over Bluetooth"] = "  ! Ô 'BT: gửi cả cò thích ứng' đang TẮT - cò của game không được gửi qua Bluetooth",
-    ["BT: trigger refresh (ms, 0 = off)"] = "BT: gửi lại cò mỗi (ms, 0 = tắt)",
-    ["Dump last game haptic preset (research)"] = "Ghi cấu trúc preset haptic cuối của game (nghiên cứu)",
-    ["Preset dump: %d lines"] = "Đã ghi preset: %d dòng",
-    ["BT: trigger force multiplier"] = "BT: nhân lực cò",
-    ["BT: hit strength"] = "BT: độ mạnh khi chém trúng",
-    ["BT: haptic beat strength"] = "BT: độ mạnh nhịp haptic",
-    ["BT: also convert every game haptic (busy: UI clicks, steps...)"] = "BT: chuyển cả mọi haptic của game (dày: bấm menu, bước chân...)",
-    ["DualSense over Bluetooth (MHWHapticBT plugin)"] = "DualSense qua Bluetooth (plugin MHWHapticBT)",
-    ["Plugin not detected. Put MHWHapticBT.dll in reframework/plugins and restart the game."] = "Chưa thấy plugin. Chép MHWHapticBT.dll vào reframework/plugins rồi mở lại game.",
-    ["Plugin %s  |  running: %s  |  bridge: %s"] = "Plugin %s  |  đang chạy: %s  |  cầu nối: %s",
-    ["  DualSense found: %s  Bluetooth: %s  opened: %s  (pid %s, in %s / out %s bytes)"] = "  Thấy DualSense: %s  Bluetooth: %s  đã mở: %s  (pid %s, vào %s / ra %s byte)",
-    ["  Reports sent: haptics %s, triggers %s  |  errors %s (last %s)  |  write: %s"] = "  Gói đã gửi: haptic %s, cò %s  |  lỗi %s (cuối %s)  |  cách ghi: %s",
-    ["  Calls seen by the plugin: vibration %s, trigger %s  |  %s"] = "  Plugin bắt được: rung %s, cò %s  |  %s",
-    ["Bluetooth bridge"] = "Cầu nối Bluetooth",
-    ["Auto (when the plugin finds a Bluetooth DualSense)"] = "Tự động (khi plugin thấy DualSense Bluetooth)",
-    ["BT haptics: strength"] = "Haptic BT: độ mạnh",
-    ["BT haptics: heavy tone (Hz)"] = "Haptic BT: tần số rung nặng (Hz)",
-    ["BT haptics: light tone (Hz)"] = "Haptic BT: tần số rung nhẹ (Hz)",
-    ["BT: send adaptive triggers too"] = "BT: gửi cả cò thích ứng",
-    ["BT: swap left/right actuators"] = "BT: đảo bên trái/phải",
-    ["BT: unsigned samples (try if haptics only buzz/click)"] = "BT: mẫu không dấu (thử nếu haptic chỉ rè/tách)",
-    ["BT: hold each request (ms)"] = "BT: giữ mỗi lệnh (ms)",
-    ["Test: plugin pulse (direct)"] = "Test: plugin rung trực tiếp",
-    ["Test: through the game (motor request)"] = "Test: qua game (lệnh motor)",
-    ["Log: reframework/data/MHWHapticBT.log"] = "Log: reframework/data/MHWHapticBT.log",
-    ["Switch gauge field looks like a timer (ignored)"] = "Field thanh switch giống bộ đếm thời gian (bỏ qua)",
-    ["Holding shield"] = "Đang giữ khiên",
-    ["Holding shield: strain rumble (rumble controllers, 0 = off)"] = "Giữ khiên: rung gồng (tay rung thường, 0 = tắt)",
-    ["  %s mode: %s   Shots detected: %d"] = "  Chế độ %s: %s   Số phát đã nhận: %d",
-    ["  (hit a few times: the counter that goes up is the active source; if all stay 0, please report it)"] = "  (chém thử vài nhát: số nào tăng là nguồn đang chạy; tất cả = 0 thì báo mình)",
-    ["  -> left trigger rumble runs on the LEFT grip motor, right trigger rumble on the RIGHT grip motor"] = "  -> rung cò trái đang chạy ở motor thân TRÁI, rung cò phải ở motor thân PHẢI",
-    ["  field value: %s   enum name: %s"] = "  giá trị field: %s   tên enum: %s",
-    ["  Game vibration sources received: haptic %d | motor %d | your sound events %d (others %d)"] = "  Nguồn rung của game nhận được: haptic %d | motor %d | âm thanh của bạn %d (người khác %d)",
-    ["  Last impact: preset strength %.2f length %.2fs -> played %.2f for %.2fs"] = "  Va chạm gần nhất: preset mạnh %.2f dài %.2fs -> phát ra lực %.2f trong %.2fs",
-    ["  Running: %s   (device reports: %s)"] = "  Đang chạy: %s   (thiết bị báo: %s)",
-    ["  using: %s   game vibration events while charging: %d"] = "  đang dùng: %s   sự kiện rung game lúc gồng: %d",
-    [" (while charging: "] = " (lúc gồng: ",
-    ["%d fields differ between A and B (sorted by amount of change):"] = "%d field khác nhau giữa A và B (xếp theo mức thay đổi):",
-    ["%s (guessed from R2) @%.2f"] = "%s (đoán theo R2) @%.2f",
-    ["(auto guess)"] = "(tự đoán)",
-    ["(none)"] = "(không có)",
-    ["(not used)"] = "(không dùng)",
-    ["1) Get into the ON state (e.g. gauge full), then press Snapshot A"] = "1) Làm cho trạng thái BẬT (vd thanh Amp đầy) rồi bấm chụp A",
-    ["2) Wait for the OFF state (e.g. gauge empty), then press Snapshot B"] = "2) Đợi trạng thái TẮT (vd thanh Amp hết) rồi bấm chụp B",
-    ["2-step Field finder (when auto-detected fields are wrong)"] = "Trình dò field 2 bước (khi field tự dò bị sai)",
-    ["3) Assign the right field to the item to track (the value at A is used as \"full\")"] = "3) Gán field đúng cho mục cần theo dõi (giá trị lúc A được lấy làm mức đầy)",
-    ["Airborne"] = "Trên không",
-    ["Also accept sound events not tied to your character (if 'yours' always stays 0)"] = "Nhận cả sự kiện âm thanh không gắn với nhân vật (nếu 'của bạn' luôn = 0)",
-    ["Also play the game's original haptics"] = "Vẫn phát haptic gốc của game song song",
-    ["Ammo in magazine"] = "Đạn trong băng",
-    ["Ammo: %s  (source: %s)"] = "Loại đạn: %s  (nguồn: %s)",
-    ["Archdemon / Demon gauge"] = "Archdemon / thanh quỷ",
-    ["Assigned %s to %s"] = "Đã gán %s cho %s",
-    ["Auto"] = "Tự động",
-    ["Auto (detected: %s)"] = "Tự động (nhận được: %s)",
-    ["Auto-detect"] = "Tự nhận",
-    ["Background rumble##ev"] = "Rung nền##ev",
-    ["Body recoil: strength##gp"] = "Giật thân: độ mạnh##gp",
-    ["Body rumble during spirit charge"] = "Rung thân lúc gồng Kijin",
-    ["Body rumble interval (s)"] = "Giãn cách rung thân (giây)",
-    ["Body rumble##ev"] = "Rung thân##ev",
-    ["Charge"] = "Gồng",
-    ["Charge (Charged Chop)"] = "Gồng (Charged Chop)",
-    ["Charge (red extract)"] = "Gồng (nước đỏ)",
-    ["Charge level field"] = "Field cấp gồng",
-    ["Charge rumble: max##ev"] = "Rung gồng: tối đa##ev",
-    ["Charge rumble: ramp time (s)##ev"] = "Rung gồng: thời gian tăng (giây)##ev",
-    ["Charge rumble: start##ev"] = "Rung gồng: lúc đầu##ev",
-    ["Charge timer field"] = "Field timer gồng",
-    ["Clear"] = "Xóa",
-    ["Click style (detent = release then hit, pulse = like LS)"] = "Kiểu khấc (detent = nhả rồi đập, pulse = như LS)",
-    ["Click: body rumble"] = "Khấc: rung thân",
-    ["Click: end"] = "Nấc: kết thúc",
-    ["Click: force"] = "Nấc: lực",
-    ["Click: haptic pulses"] = "Khấc: số nháy haptic",
-    ["Click: hit time"] = "Khấc: thời gian đập",
-    ["Click: release time"] = "Khấc: thời gian nhả",
-    ["Click: start"] = "Nấc: bắt đầu",
-    ["Cluster"] = "Cluster (Chùm)",
-    ["Continuous haptics while holding"] = "Rung haptic liên tục lúc giữ",
-    ["Continuous rumble because of: "] = "Đang rung liên tục vì: ",
-    ["Controller & rumble motors"] = "Tay cầm & motor rung (DualSense / Flydigi Vader 5 / Xbox)",
-    ["Controller type"] = "Loại tay cầm",
-    ["Current combo: %d"] = "Combo hiện tại: %d",
-    ["default"] = "mặc định",
-    ["Detect morph from trigger pulls (only when there is no mode field)"] = "Nhận đổi dạng khi bóp cò (chỉ khi không có field dạng)",
-    ["Diagnostics (troubleshooting / bug reports)"] = "Chẩn đoán (khi có lỗi / muốn báo lỗi)",
-    ["DISCHARGE %d PHIALS @%.2f"] = "XẢ %d LỌ @%.2f",
-    ["Discharge must last (s) before it rumbles"] = "Discharge phải kéo dài (giây) mới rung",
-    ["Discharge: end rumble"] = "Discharge: rung cuối",
-    ["Discharge: ramp time"] = "Discharge: thời gian tăng",
-    ["Discharge: start rumble"] = "Discharge: rung đầu",
-    ["DualSense (adaptive triggers + haptics)"] = "DualSense (cò thích ứng + haptic)",
-    ["DualSense mode"] = "chế độ DualSense",
-    ["DualSense-style impact rumble (hits, getting hit, explosions...)"] = "Rung va chạm kiểu DualSense (chém trúng, bị đánh, nổ...)",
-    ["Each note"] = "Mỗi nốt nhạc",
-    ["Echo Bubble placed"] = "Đặt Echo Bubble",
-    ["Element"] = "Element (Nguyên tố)",
-    ["Empty magazine = loose trigger (needs the correct ammo field first)"] = "Hết đạn thì cò lỏng hẳn (cần dò đúng field đạn trước)",
-    ["Empty magazine = loose trigger (needs the correct ammo field)"] = "Hết đạn thì cò lỏng hẳn (cần dò đúng field đạn)",
-    ["Enable Haptic Pack"] = "Bật Haptic Pack",
-    ["enum name"] = "tên enum",
-    ["ERROR: "] = "LỖI: ",
-    ["Extra per combo hit"] = "Mỗi nhát combo cộng thêm",
-    ["Field viewer (yellow = changed in the last second)"] = "Field viewer (vàng = vừa đổi trong 1 giây)",
-    ["FINISHER BURST @%.2f"] = "NỔ KẾT THÚC @%.2f",
-    ["Finisher burst: rumble"] = "Nổ kết thúc: rung",
-    ["Follow the game rhythm like the original LS mod (smoothest)"] = "Rung theo nhịp game như LS gốc (mượt nhất)",
-    ["Footsteps: interval (s)##ev"] = "Bước chân: giãn cách (giây)##ev",
-    ["Footsteps: strength##ev"] = "Bước chân: độ mạnh##ev",
-    ["Force ammo type (when the field is not found)"] = "Ép loại đạn (khi chưa dò được field)",
-    ["Force weapon type (if detected wrong)"] = "Ép loại vũ khí (nếu nhận sai)",
-    ["forced"] = "ép tay",
-    ["GAUGE RELOAD @%.2f"] = "NẠP THANH @%.2f",
-    ["GUARD HIT (POWER GUARD) @%.2f"] = "ĐỠ TRÚNG (POWER GUARD) @%.2f",
-    ["GUARD HIT @%.2f"] = "ĐỠ TRÚNG @%.2f",
-    ["Guard hit: body rumble"] = "Đỡ trúng: rung thân",
-    ["Guard hit: haptic pulses"] = "Đỡ trúng: số nháy haptic",
-    ["Guard hit: impact time"] = "Đỡ trúng: thời gian va đập",
-    ["Guard hit: trigger vibration"] = "Đỡ trúng: độ rung cò",
-    ["Guard snap"] = "Snap khi đỡ",
-    ["Guard trigger force"] = "Lực cò khi đỡ",
-    ["Haptic -> rumble: strength"] = "Haptic -> rung: độ mạnh",
-    ["Haptic beat (s, 0 = off)##ev"] = "Nhịp haptic (giây, 0 = tắt)##ev",
-    ["Haptic captured: "] = "Haptic bắt được: ",
-    ["Haptic pulses##ev"] = "Số nháy haptic##ev",
-    ["Haptic pulses: base"] = "Số nháy haptic: gốc",
-    ["Haptic pulses: extra per level"] = "Số nháy haptic: thêm mỗi cấp",
-    ["Heartbeat: interval (s)##ev"] = "Nhịp tim: giãn cách (giây)##ev",
-    ["Heartbeat: strength##ev"] = "Nhịp tim: độ mạnh##ev",
-    ["Heavy (left grip)"] = "Nặng (thân trái)",
-    ["Hold haptic interval (0 = every frame, like LS)"] = "Giãn cách haptic lúc giữ (0 = mỗi frame như LS)",
-    ["Hold snap"] = "Snap lúc giữ",
-    ["Iai: %s   Spirit charge: %s   stiff trigger: %s"] = "Iai: %s   Kijin: %s   cò cứng: %s",
-    ["Iai: trigger force"] = "Iai: lực cò",
-    ["Ignition mode"] = "Chế độ Ignition",
-    ["Ignition type (heart = Wyvernheart, counter = Wyverncounter)"] = "Kiểu Ignition (heart = Wyvernheart, counter = Wyverncounter)",
-    ["Ignition: spin-up / full charge time"] = "Ignition: thời gian quay nòng / gồng đầy",
-    ["Impact rumble strength"] = "Độ mạnh rung va chạm",
-    ["installed (cannot filter by player)"] = "đã cài (không lọc được theo người chơi)",
-    ["installed (only your events)"] = "đã cài (chỉ nhận sự kiện của bạn)",
-    ["Lance Charge (charging run)"] = "Lance Charge (chạy húc)",
-    ["Last event: "] = "Sự kiện cuối: ",
-    ["Left trigger (L2/LT)"] = "Cò trái (L2)",
-    ["LEVEL UP %d (%s) @%.2f"] = "LÊN NẤC %d (%s) @%.2f",
-    ["Level-up source"] = "Nguồn nhận lên nấc",
-    ["Light (right grip)"] = "Nhẹ (thân phải)",
-    ["Light tension rumble while pressing inside a resistance zone"] = "Rung căng nhẹ khi đang đè cò trong vùng lực cản",
-    ["Lite mode (co-op) — NOTE: makes charge-hold vibration sparser and weaker"] = "Chế độ nhẹ (co-op) — LƯU Ý: làm rung lúc giữ gồng thưa và nhạt đi",
-    ["LOADED %d PHIALS @%.2f"] = "NẠP %d LỌ @%.2f",
-    ["Loaded ammo (value %s) is"] = "Đạn đang cầm (giá trị %s) là",
-    ["Minimum charge (s)"] = "Gồng tối thiểu (giây)",
-    ["MORPH @%.2f"] = "ĐỔI DẠNG @%.2f",
-    ["Morph: body rumble"] = "Đổi dạng: rung thân",
-    ["Motor roles (press Test to find where each motor is on your controller):"] = "Vai trò từng motor (bấm Test để biết motor nào rung ở đâu trên tay cầm):",
-    ["New mode must hold (s) to count as a morph"] = "Dạng mới phải giữ (giây) mới tính đổi dạng",
-    ["none"] = "không có",
-    ["Normal"] = "Normal (Thường)",
-    ["not installed (not needed)"] = "chưa cài (không cần)",
-    ["not recognized"] = "chưa nhận ra",
-    ["not supported"] = "không thuộc pack",
-    ["not yet"] = "chưa",
-    ["Notes"] = "Nốt nhạc",
-    ["Off"] = "Tắt",
-    ["On: rumble on Discharge"] = "Bật: rung khi Discharge",
-    ["On: rumble on morph"] = "Bật: rung khi đổi dạng",
-    ["On: rumble when the switch gauge reloads"] = "Bật: rung khi nạp thanh switch",
-    ["Only show relevant fields"] = "Chỉ hiện field liên quan",
-    ["Orange extract"] = "Nước cam",
-    ["Orange extract gained"] = "Lấy nước cam",
-    ["OVERALL rumble strength (all effects)"] = "Độ mạnh rung TỔNG (mọi hiệu ứng)",
-    ["Performance"] = "Diễn tấu",
-    ["Performance: trigger pulse on each beat"] = "Diễn tấu: độ rung cò theo nhịp",
-    ["Performing"] = "Đang diễn tấu",
-    ["Phial discharge: base rumble"] = "Xả lọ: rung gốc",
-    ["Phial discharge: extra per phial"] = "Xả lọ: thêm mỗi lọ",
-    ["Phial load: rumble per phial"] = "Nạp lọ: rung mỗi lọ",
-    ["Phials"] = "Số lọ",
-    ["Pierce"] = "Pierce (Xuyên)",
-    ["R2 guard: force"] = "R2 đỡ đòn: lực",
-    ["R2 guard: resistance up to (travel)"] = "R2 đỡ đòn: cản tới (hành trình)",
-    ["R2 guard: snap"] = "R2 đỡ đòn: snap",
-    ["R2 has one click point (piano key / trigger break)"] = "Cò R2 có 1 nấc (phím đàn / gãy cò súng)",
-    ["Rapid Fire mode"] = "Chế độ Rapid Fire",
-    ["Rapid Fire: recoil per shot (scale)"] = "Rapid Fire: độ giật mỗi viên (tỉ lệ)",
-    ["Rapid Fire: trigger force (scale)"] = "Rapid Fire: lực cò (tỉ lệ)",
-    ["Re-detect controller"] = "Dò lại tay cầm",
-    ["Red extract"] = "Nước đỏ",
-    ["Red extract expired"] = "Hết nước đỏ",
-    ["Red extract gained"] = "Lấy nước đỏ",
-    ["Release body rumble: base"] = "Rung thân khi buông: gốc",
-    ["Release body rumble: extra per level"] = "Rung thân khi buông: thêm mỗi cấp",
-    ["RELEASE level %d (charged %.2fs) @%.2f"] = "BUÔNG cấp %d (gồng %.2fs) @%.2f",
-    ["Reload"] = "Nạp đạn",
-    ["RELOAD @%.2f"] = "NẠP ĐẠN @%.2f",
-    ["Resistance start position"] = "Vị trí bắt đầu cản",
-    ["Restore Flydigi Vader 5 Pro defaults"] = "Khôi phục thông số mặc định Flydigi Vader 5",
-    ["Right trigger (R2/RT)"] = "Cò phải (R2)",
-    ["Roundslash: strength"] = "Roundslash: độ mạnh",
-    ["rumble controller"] = "tay cầm rung thường",
-    ["Rumble controller: Xbox / XInput / Flydigi Vader 5 (trigger motors + body)"] = "Rung thường: Xbox / XInput / Flydigi Vader 5 (cò rung + motor)",
-    ["Rumble controllers: detect guard hits from sound events"] = "Tay rung thường (Vader): nhận đỡ trúng qua âm thanh",
-    ["rumble mode"] = "chế độ rung thường",
-    ["Rumble on enter##ev"] = "Rung lúc vào trạng thái##ev",
-    ["Rumble on exit##ev"] = "Rung lúc kết thúc##ev",
-    ["Rumble time (s)"] = "Thời gian rung (giây)",
-    ["Savage Axe: grinding buzz (0 = off)"] = "Savage Axe: rung rè (0 = tắt)",
-    ["Script cost: %.3f ms/frame (avg %.3f, 5s peak %.3f)"] = "Hiệu năng script: %.3f ms/frame (TB %.3f, đỉnh 5s %.3f)",
-    ["Selected ammo type"] = "Loại đạn đang chọn",
-    ["Shelling (Full Burst = several shells)"] = "Bắn đạn (Full Burst = nhiều viên)",
-    ["Shells"] = "Số đạn",
-    ["Shield charged"] = "Khiên cường hóa",
-    ["SHIELD CHARGED @%.2f"] = "KHIÊN CƯỜNG HÓA @%.2f",
-    ["Shield charged: rumble"] = "Khiên cường hóa: rung",
-    ["Shield trigger (wall at the start of the pull)"] = "Cò khiên (tường cản ở đầu hành trình)",
-    ["SHIELD UP @%.2f"] = "GIƠ KHIÊN @%.2f",
-    ["Shield: snap"] = "Khiên: snap",
-    ["Shield: wall depth (travel)"] = "Khiên: tường dày tới (hành trình)",
-    ["Shield: wall stiffness"] = "Khiên: độ cứng tường",
-    ["SHOT %s @%.2f"] = "BẮN %s @%.2f",
-    ["Shotgun: blast##sg"] = "Shotgun: cú nổ##sg",
-    ["Shotgun: pellet hits##sg"] = "Shotgun: số tiếng đạn chì găm##sg",
-    ["Shotgun: pump strength##sg"] = "Shotgun: độ mạnh tiếng bơm##sg",
-    ["Shotgun: pump-action clack##sg"] = "Shotgun: tiếng bơm đạn cạch-cạch##sg",
-    ["Shotgun: trigger lock while racking (s)##sg"] = "Shotgun: khóa cò lúc lên đạn (giây)##sg",
-    ["Slash 1: strength"] = "Nhát 1: độ mạnh",
-    ["Slicing"] = "Slicing (Cắt)",
-    ["Snap (high = abrupt)"] = "Snap (cao = khựng)",
-    ["Snapshot A (ON / FULL)"] = "Chụp A (BẬT / ĐẦY)",
-    ["Snapshot B (OFF / EMPTY)"] = "Chụp B (TẮT / HẾT)",
-    ["Sound hook: "] = "Hook âm thanh: ",
-    ["Special ammo (Wyvernblast/Adhesive)"] = "Đạn đặc biệt (Wyvernblast/Adhesive)",
-    ["Special ammo (Wyvernsnipe)"] = "Đạn đặc biệt (Wyvernsnipe)",
-    ["SPECIAL AMMO @%.2f"] = "ĐẠN ĐẶC BIỆT @%.2f",
-    ["SPIRIT BLADE %d (strength %.2f) @%.2f"] = "SPIRIT BLADE %d (lực %.2f) @%.2f",
-    ["SPIRIT CHARGE ENDED @%.2f"] = "HẾT GỒNG KIJIN @%.2f",
-    ["SPIRIT CHARGE LEVEL UP @%.2f"] = "KIJIN LÊN CẤP @%.2f",
-    ["Spirit charge: trigger force"] = "Kijin: lực cò lúc gồng",
-    ["Spirit level (white/yellow/red)"] = "Cấp Spirit (trắng/vàng/đỏ)",
-    ["Spirit level-up: trigger vibration"] = "Kijin lên cấp: độ rung cò",
-    ["Spirit level: bonus per level"] = "Cấp Spirit: cộng thêm mỗi cấp",
-    ["Spread"] = "Spread (Tản)",
-    ["Status"] = "Status (Trạng thái)",
-    ["Sticky"] = "Sticky (Dính nổ)",
-    ["Support (Recover/Buff/Tranq)"] = "Support (Hồi/Buff/Tranq)",
-    ["Swing length (s)"] = "Độ dài nhát vút (giây)",
-    ["Switch gauge"] = "Thanh switch",
-    ["Sword charged (red)"] = "Kiếm nạp (đỏ)",
-    ["SWORD CHARGED (RED) @%.2f"] = "KIẾM NẠP ĐỎ @%.2f",
-    ["Sword-swing feel on Spirit Blade slashes"] = "Cảm giác vung kiếm khi chém Spirit Blade",
-    ["Sword/Axe mode"] = "Dạng kiếm/rìu",
-    ["taken"] = "đã chụp",
-    ["Test 5-phial discharge"] = "Test xả 5 lọ",
-    ["Test enter##ev"] = "Test vào trạng thái##ev",
-    ["Test finisher burst"] = "Test nổ kết thúc",
-    ["Test guard hit"] = "Test đỡ trúng",
-    ["Test guard hit (hold R2 to feel it)"] = "Test đỡ trúng (giữ R2 cho cảm nhận)",
-    ["Test heartbeat##ev"] = "Test nhịp tim##ev",
-    ["Test impact"] = "Test va chạm",
-    ["Test left trigger rumble"] = "Test rung cò trái",
-    ["Test level-up (hold R2 to feel it)"] = "Test lên nấc (giữ R2 cho cảm nhận)",
-    ["Test max-level release"] = "Test buông cấp tối đa",
-    ["Test morph"] = "Test đổi dạng",
-    ["Test one shot (hold R2 to feel it)"] = "Test 1 phát (giữ R2 cho cảm nhận)",
-    ["Test one slash (press repeatedly = combo)"] = "Test 1 nhát (bấm liên tiếp = combo)",
-    ["Test R2 pulse"] = "Test nhịp đập R2",
-    ["Test R2 wall hit"] = "Test chạm tường R2",
-    ["Test right trigger rumble"] = "Test rung cò phải",
-    ["This controller has no trigger resistance: trigger effects are turned into trigger-motor rumble."] = "Cò không có lực cản trên tay cầm này: hiệu ứng cò được chuyển thành rung motor cò.",
-    ["Tracked fields (auto-detected; if wrong, use the Field finder above):"] = "Field theo dõi (tự dò; sai thì dùng Trình dò field ở trên):",
-    ["Trigger click on level-up"] = "Khấc cò khi lên nấc",
-    ["Trigger click on morph"] = "Khấc cò khi đổi dạng",
-    ["Trigger effect sent (%s2): force %.2f  vib %.2f  from %.2f  to %.2f  snap %.2f"] = "Lực cò đang gửi (%s2): lực %.2f  rung %.2f  từ %.2f  tới %.2f  snap %.2f",
-    ["Trigger force when guarding"] = "Lực cò khi đỡ đòn",
-    ["Trigger force while charging (%s2)"] = "Lực cò khi gồng (%s2)",
-    ["Trigger force while guarding"] = "Lực cò khi đang đỡ",
-    ["Trigger force while holding"] = "Lực cò lúc giữ",
-    ["Trigger kick / lock / click when firing (heavier on the finger)"] = "Cò giật / khóa / khấc khi bắn (nặng tay hơn)",
-    ["Trigger kick: time##ev"] = "Cò giật: thời gian##ev",
-    ["Trigger kick: time##gp"] = "Giật cò: thời gian##gp",
-    ["Trigger kick: vibration##ev"] = "Cò giật: độ rung##ev",
-    ["Trigger kick: vibration##gp"] = "Giật cò: độ rung##gp",
-    ["Trigger motors respond (tick only if the trigger tests vibrate)"] = "Motor trong cò nhận lệnh từ game (chỉ tick nếu Test cò có rung)",
-    ["Trigger rumble strength"] = "Độ mạnh rung cò",
-    ["Trigger rumble: bleed into the other motor (fuller feel)"] = "Rung cò: pha sang motor bên kia (đầm hơn)",
-    ["Trigger stiff from the start of the charge (original LS: after the first level-up)"] = "Cò cứng ngay từ lúc bắt đầu gồng (LS gốc: sau lần lên cấp đầu)",
-    ["Trigger used for charging"] = "Cò dùng để gồng",
-    ["Trigger: click ends at (travel)##gp"] = "Cò: nấc kết thúc ở (hành trình)##gp",
-    ["Trigger: click stiffness##gp"] = "Cò: độ cứng nấc##gp",
-    ["Trigger: impact time"] = "Cò: thời gian va đập",
-    ["Trigger: snap##gp"] = "Cò: snap##gp",
-    ["Trigger: vibration on slash"] = "Cò: độ rung khi chém",
-    ["Triggers: L2=%.2f  R2=%.2f   Charging: %s  Level: %d   Releases: %d"] = "Cò: L2=%.2f  R2=%.2f   Đang gồng: %s  Cấp: %d   Lần buông: %d",
-    ["TRIPLE UP (all 3 extracts)"] = "TRIPLE UP (đủ 3 nước)",
-    ["Tune "] = "Chỉnh ",
-    ["Tune %s:"] = "Chỉnh riêng cho %s:",
-    ["unknown (defaulting to Normal)"] = "chưa biết (mặc định Normal)",
-    ["Vault / airborne"] = "Vault / trên không",
-    ["Vibration only, leave the R2 trigger alone"] = "Chỉ rung haptic, không đụng vào cò R2",
-    ["Weapon handling type: "] = "Vũ khí đang cầm: ",
-    ["Weapon trigger"] = "Cò của vũ khí",
-    ["Weapon: "] = "Vũ khí: ",
-    ["White extract"] = "Nước trắng",
-    ["White extract gained"] = "Lấy nước trắng",
-    ["Write all fields to the log"] = "Ghi toàn bộ field ra log",
-    ["Wyvern"] = "Wyvern (Long kích)",
-    ["Wyvern's Fire gauge"] = "Thanh Wyvern's Fire",
-    ["your mapping"] = "bảng của bạn",
-}
+local Language = require("core.language")
+local Menu = require("core.menu")
+local imgui = Menu.imgui
 
 local CFG = {
     RELEASE_FRAMES  = 3,     -- consecutive frames without a charge => counts as released
@@ -865,7 +479,7 @@ local function pad_call(pad, sig, ...)
     if ok then
         if call_status[key] ~= "OK" then call_status[key] = "OK" end
     else
-        call_status[key] = tr("ERROR: ") .. tostring(err)
+        call_status[key] = Language.translate("ERROR: ") .. tostring(err)
     end
 end
 
@@ -1116,7 +730,7 @@ local function analyze_preset(obj)
                     local okv, v = pcall(f.get_data, f, obj)
                     if okv and type(v) == "number" then
                         local n = f:get_name():lower()
-                        if #info.dump < 14 then info.dump[#info.dump + 1] = fmt("%s=%.3f", f:get_name(), v) end
+                        if #info.dump < 14 then info.dump[#info.dump + 1] = Language.format("%s=%.3f", f:get_name(), v) end
                         if (n:find("time") or n:find("duration") or n:find("length") or n:find("sec")) and v > 0 and v < 10 then
                             info.d = math.max(info.d or 0, v)
                         elseif n:find("frame") and v > 0 and v < 600 then
@@ -1154,7 +768,7 @@ local function dump_value(out, prefix, v, depth, seen)
     -- arrays / lists: size + first elements
     local okS, size = pcall(v.get_size, v)
     if okS and type(size) == "number" then
-        out[#out + 1] = fmt("%s : %s  [array, %d elements]", prefix, tname, size)
+        out[#out + 1] = Language.format("%s : %s  [array, %d elements]", prefix, tname, size)
         local parts = {}
         for i = 0, math.min(size, 32) - 1 do
             local oke, e = pcall(v.get_element, v, i)
@@ -1179,9 +793,9 @@ local function dump_value(out, prefix, v, depth, seen)
                     local ft = f:get_type() and f:get_type():get_full_name() or "?"
                     if okv then
                         if type(fv) == "userdata" then dump_value(out, prefix .. "." .. f:get_name(), fv, depth + 1, seen)
-                        else out[#out + 1] = fmt("%s.%s (%s) = %s", prefix, f:get_name(), ft, tostring(fv)) end
+                        else out[#out + 1] = Language.format("%s.%s (%s) = %s", prefix, f:get_name(), ft, tostring(fv)) end
                     else
-                        out[#out + 1] = fmt("%s.%s (%s) = <unreadable>", prefix, f:get_name(), ft)
+                        out[#out + 1] = Language.format("%s.%s (%s) = <unreadable>", prefix, f:get_name(), ft)
                     end
                 end
             end
@@ -1199,7 +813,7 @@ local function dump_last_preset()
     if saved_preset[3] then dump_value(out, "requestData", saved_preset[3], 1, {}) end
     local ok, err = pcall(json.dump_file, "MHWilds_preset_dump.json", out)
     log.info("[HapticPack] preset dump: " .. #out .. " lines -> reframework/data/MHWilds_preset_dump.json " .. (ok and "" or tostring(err)))
-    S.ev = fmt("Preset dump: %d lines", #out)
+    S.ev = Language.format("Preset dump: %d lines", #out)
 end
 
 -- =============================================
@@ -1219,7 +833,7 @@ local function list_methods(td, maxN)
                 local okn, n = pcall(m.get_name, m)
                 local okp, np = pcall(m.get_num_params, m)
                 local okr, rt = pcall(m.get_return_type, m)
-                if okn then names[#names + 1] = fmt("%s::%s(%s) -> %s", t:get_full_name(), n, okp and tostring(np) or "?",
+                if okn then names[#names + 1] = Language.format("%s::%s(%s) -> %s", t:get_full_name(), n, okp and tostring(np) or "?",
                                                       (okr and rt) and rt:get_full_name() or "?") end
                 if #names >= (maxN or 120) then return names end
             end
@@ -1247,13 +861,13 @@ local function probe_getters(obj, out, prefix, depth)
                             local okrt, rtd = pcall(r.get_type_definition, r)
                             local rn = (okrt and rtd) and rtd:get_full_name() or "?"
                             local okstr, str = pcall(r.call, r, "ToString")
-                            out[#out + 1] = fmt("%s.%s() = <%s> %s", prefix, n, rn, okstr and tostring(str) or "")
+                            out[#out + 1] = Language.format("%s.%s() = <%s> %s", prefix, n, rn, okstr and tostring(str) or "")
                             if depth < 1 then probe_getters(r, out, prefix .. "." .. n .. "()", depth + 1) end
                         else
-                            out[#out + 1] = fmt("%s.%s() = %s", prefix, n, tostring(r))
+                            out[#out + 1] = Language.format("%s.%s() = %s", prefix, n, tostring(r))
                         end
                     else
-                        out[#out + 1] = fmt("%s.%s() = <error>", prefix, n)
+                        out[#out + 1] = Language.format("%s.%s() = <error>", prefix, n)
                     end
                 end
             end
@@ -1298,12 +912,12 @@ local function save_catalog(quiet)
     table.sort(list, function(a, b) return a.n > b.n end)
     local out = { version = VERSION, presets = #list, entries = {}, probe = catalogProbe or { "(no preset with an audio source seen yet)" } }
     for i, e in ipairs(list) do
-        out.entries[i] = fmt("x%-4d id=%s vol=%s dur=%s node=%s weapon=%s/%s path=%s bnvib=%s", e.n, tostring(e.id),
+        out.entries[i] = Language.format("x%-4d id=%s vol=%s dur=%s node=%s weapon=%s/%s path=%s bnvib=%s", e.n, tostring(e.id),
             tostring(e.vol), tostring(e.dur), tostring(e.node), e.first, e.last, tostring(e.path), tostring(e.bnvib))
     end
     local ok, err = pcall(json.dump_file, "MHWilds_haptic_catalog.json", out)
     catalogDirty = false
-    if not quiet then S.ev = fmt("Haptic catalog: %d presets saved", #list) end
+    if not quiet then S.ev = Language.format("Haptic catalog: %d presets saved", #list) end
     log.info("[HapticPack] haptic catalog: " .. #list .. " presets -> reframework/data/MHWilds_haptic_catalog.json " .. (ok and "" or tostring(err)))
 end
 
@@ -1609,14 +1223,14 @@ local function on_level_up(now, c, lvl)
     end
     start_haptics(now, c.notchHaptics, 0.035)
     if c.notchRumble > 0 then start_rumble(now, c.notchRumble, c.notchRumbleTime) end
-    S.ev = fmt("LEVEL UP %d (%s) @%.2f", lvl, S.levelSrcUsed, now)
+    S.ev = Language.format("LEVEL UP %d (%s) @%.2f", lvl, S.levelSrcUsed, now)
 end
 
 local function on_release(now, c, lvl, dur)
     start_rumble(now, c.rumbleBase + c.rumbleStep * lvl, c.rumbleTime)
     start_haptics(now, c.hapticBase + c.hapticStep * lvl, c.hapticGap)
     S.releases = S.releases + 1
-    S.ev = fmt("RELEASE level %d (charged %.2fs) @%.2f", lvl, dur, now)
+    S.ev = Language.format("RELEASE level %d (charged %.2fs) @%.2f", lvl, dur, now)
 end
 
 -- Sound-driven vibration events from the game (LS uses this hook to know when the spirit charge levels up).
@@ -2033,7 +1647,7 @@ do
         S.lite = data.lite == true
         SAVE.gunMap = type(data.gunMap) == "table" and data.gunMap or {}
         if data.out == "rumble" or data.out == "dualsense" then S.out = data.out end
-        if data.lang == "vi" or data.lang == "en" then LANG = data.lang end
+        Language.set(data.lang)
         if data.outMode == "auto" or data.outMode == "dualsense" or data.outMode == "rumble" then S.outMode = data.outMode end
         if S.outMode ~= "auto" then S.out = S.outMode end
         if type(data.motorRoles) == "table" then S.motorRoles = data.motorRoles end
@@ -2201,7 +1815,7 @@ local function guard_feel(now, c, guarding)
         local r = c.guardRaise
         pulse("heavy", r[1], r[3]); pulse("light", r[2], r[3] * 0.6)
         pulse((c.trigger == "L") and "trigL" or "trigR", 0.9, r[3])
-        S.ev = fmt("SHIELD UP @%.2f", now)
+        S.ev = Language.format("SHIELD UP @%.2f", now)
     elseif not guarding and S.wasGuarding then
         local lo = c.guardLower or 0.35
         if lo > 0 then pulse("light", lo, 0.06) end                       -- lowering the shield: light tick
@@ -2243,7 +1857,7 @@ local function update_sa(now, c, pad)
         S.lastMorph = now
         if c.morphNotch then trigger_notch(now, c.trigger) end
         thunk(now, c.morphRumble, c.morphHaptics, 0.1)
-        S.ev = fmt("MORPH @%.2f", now)
+        S.ev = Language.format("MORPH @%.2f", now)
     end
 
     -- ---- Switch gauge reload: jump >= 30% of the highest value, at least 1.5s apart ----
@@ -2262,7 +1876,7 @@ local function update_sa(now, c, pad)
        and g - gPrev >= 0.3 * S.saGaugeMax and now - (S.saLastReload or -10) > 1.5 then
         S.saLastReload = now
         start_haptics(now, c.reloadHaptics, 0.06)
-        S.ev = fmt("GAUGE RELOAD @%.2f", now)
+        S.ev = Language.format("GAUGE RELOAD @%.2f", now)
     end
 
     -- ---- Discharge: must last >= dischargeHold before it rumbles ----
@@ -2275,7 +1889,7 @@ local function update_sa(now, c, pad)
     end
     if disOn and now - S.disSeen >= c.dischargeHold then
         S.vibWhy[#S.vibWhy + 1] = "Discharge"
-        if not S.disStart then S.disStart = now; S.ev = fmt("DISCHARGE @%.2f", now) end
+        if not S.disStart then S.disStart = now; S.ev = Language.format("DISCHARGE @%.2f", now) end
         local p = math.min(1.0, (now - S.disStart) / math.max(0.1, c.dischargeRamp))
         if now - S.lastDisRumble >= (S.lite and 0.08 or 0.04) then
             S.lastDisRumble = now
@@ -2288,7 +1902,7 @@ local function update_sa(now, c, pad)
     elseif S.disStart and not disOn then
         S.disStart = nil
         thunk(now, c.finisherRumble, c.finisherHaptics, c.finisherTime)
-        S.ev = fmt("FINISHER BURST @%.2f", now)
+        S.ev = Language.format("FINISHER BURST @%.2f", now)
     end
 
     apply_trigger(c.trigger, fx_trigger(now) or FREE)
@@ -2309,7 +1923,7 @@ local function update_cb(now, c, pad)
             S.lastGuardHit = now
             trigger_notch(now, c.trigger, 0.04, 0.09)
             thunk(now, c.guardHitRumble, c.guardHitHaptics, 0.12)
-            S.ev = fmt("GUARD HIT @%.2f", now)
+            S.ev = Language.format("GUARD HIT @%.2f", now)
         end
     end
 
@@ -2320,25 +1934,25 @@ local function update_cb(now, c, pad)
         if d > 0 and d <= 10 then
             start_haptics(now, d, c.phialGap)
             start_rumble(now, c.phialTick, 0.05 + 0.04 * d)
-            S.ev = fmt("LOADED %d PHIALS @%.2f", d, now)
+            S.ev = Language.format("LOADED %d PHIALS @%.2f", d, now)
         elseif d < 0 and d >= -10 then
             local n = -d
             thunk(now, math.min(2.0, c.dischargeBase + c.dischargePerPhial * n), 2 + n, 0.2 + 0.05 * n)
-            S.ev = fmt("DISCHARGE %d PHIALS @%.2f", n, now)
+            S.ev = Language.format("DISCHARGE %d PHIALS @%.2f", n, now)
         end
     end
 
     local sw, swPrev = rule_value("sword")
     if is_on(sw) and not is_on(swPrev) and swPrev ~= nil then
         start_haptics(now, c.swordChargedHaptics, 0.08)
-        S.ev = fmt("SWORD CHARGED (RED) @%.2f", now)
+        S.ev = Language.format("SWORD CHARGED (RED) @%.2f", now)
     end
 
     local sh, shPrev = rule_value("shield")
     if is_on(sh) and not is_on(shPrev) and shPrev ~= nil then
         trigger_notch(now, c.trigger)
         thunk(now, c.shieldRumble, c.shieldHaptics, 0.2)
-        S.ev = fmt("SHIELD CHARGED @%.2f", now)
+        S.ev = Language.format("SHIELD CHARGED @%.2f", now)
     end
 
     local ax = rule_value("axe")
@@ -2424,7 +2038,7 @@ local function ls_spirit_slash(now, c)
     end
     S.lsSwing = { start = now, T = c.spiritSwingTime + 0.03 * (n - 1), peak = peak, hit = false, haptics = haptics }
     if impT > 0 then trigger_impact(now, c.trigger, impT, impF) end
-    S.ev = fmt("SPIRIT BLADE %d (strength %.2f) @%.2f", n, peak, now)
+    S.ev = Language.format("SPIRIT BLADE %d (strength %.2f) @%.2f", n, peak, now)
 end
 
 local function update_ls(now, c, pad)
@@ -2433,14 +2047,14 @@ local function update_ls(now, c, pad)
 
     if S.lsKijin and now - S.lsKijinLast > c.kijinTimeout then
         S.lsKijin, S.lsArmed, S.lsLvUp = false, false, false
-        S.ev = fmt("SPIRIT CHARGE ENDED @%.2f", now)
+        S.ev = Language.format("SPIRIT CHARGE ENDED @%.2f", now)
     end
     S.charging = S.lsKijin   -- so the hook captures the vibration pattern used while charging
 
     local active = S.lsKijin and not S.lsIai
     if active and S.lsLvUp and now - S.lsLastPulse > c.lvCooldown then
         S.lsLastPulse, S.lsPulseUntil, S.lsLvUp, S.lsArmed = now, now + c.pulseTime, false, true
-        S.ev = fmt("SPIRIT CHARGE LEVEL UP @%.2f", now)
+        S.ev = Language.format("SPIRIT CHARGE LEVEL UP @%.2f", now)
     end
 
     if active and c.holdHaptic and not c.hapticInHook then
@@ -2521,7 +2135,7 @@ local function do_guard(now, c, pad)
                 trigger_notch(now, c.trigger, 0.04, 0.09)
                 thunk(now, c.guardHitRumble, c.guardHitHaptics, 0.12)
             end
-            S.ev = fmt(mul > 1.0 and "GUARD HIT (POWER GUARD) @%.2f" or "GUARD HIT @%.2f", now)
+            S.ev = Language.format(mul > 1.0 and "GUARD HIT (POWER GUARD) @%.2f" or "GUARD HIT @%.2f", now)
         end
     end
 end
@@ -2540,7 +2154,7 @@ local function fire_event(now, c, ev, units)
     else
         thunk(now, r, h, t)
     end
-    S.ev = fmt("%s x%d @%.2f", ev.label, units, now)
+    S.ev = Language.format("%s x%d @%.2f", ev.label, units, now)
 end
 
 -- Effects when ENTERING / LEAVING a state ("active" events), de-flickered with ev.cool
@@ -2619,7 +2233,7 @@ local function run_event(now, c, i, ev)
         local rs = S.rules[ev.key]
         if not (rs and rs.idx > 1 and live(ev.key)) and S.rt > 0.6 and (S.rtPrevGun or 0) <= 0.6 then
             ev_edge(now, c, ev, st, true)
-            S.ev = fmt("%s (guessed from R2) @%.2f", ev.label, now)
+            S.ev = Language.format("%s (guessed from R2) @%.2f", ev.label, now)
         end
     end
 
@@ -2630,7 +2244,7 @@ local function run_event(now, c, i, ev)
             st.active, st.since = true, now
             if ev.heart or ev.step then st.lastBeat = now end      -- the first beat comes after the "enter" hit
             ev_edge(now, c, ev, st, true)
-            S.ev = fmt("%s @%.2f", ev.label, now)
+            S.ev = Language.format("%s @%.2f", ev.label, now)
         end
         local rr = ev.rumble or 0
         if ev.ramp then
@@ -2754,46 +2368,46 @@ local function generic_menu(c)
         a, c.soundGuardHit = imgui.checkbox("Rumble controllers: detect guard hits from sound events", c.soundGuardHit)
     end
     for i, ev in ipairs(c.events) do
-        local a, en = imgui.checkbox(tr(ev.label) .. "  (" .. ev.on .. ")##en" .. i, not ev.off)
+        local a, en = imgui.checkbox(Language.translate(ev.label) .. "  (" .. ev.on .. ")##en" .. i, not ev.off)
         if a then ev.off = not en end
         if ev.on == "active" then
             if ev.enterRumble ~= nil then
-                a, ev.enterRumble = imgui.slider_float(tr("Rumble on enter##ev") .. i, ev.enterRumble, 0.0, 2.0)
+                a, ev.enterRumble = imgui.slider_float(Language.translate("Rumble on enter##ev") .. i, ev.enterRumble, 0.0, 2.0)
             end
             if ev.ramp then
-                a, ev.ramp[1] = imgui.slider_float(tr("Charge rumble: start##ev") .. i, ev.ramp[1], 0.0, 1.0)
-                a, ev.ramp[2] = imgui.slider_float(tr("Charge rumble: max##ev") .. i, ev.ramp[2], 0.0, 1.5)
-                a, ev.ramp[3] = imgui.slider_float(tr("Charge rumble: ramp time (s)##ev") .. i, ev.ramp[3], 0.2, 3.0)
+                a, ev.ramp[1] = imgui.slider_float(Language.translate("Charge rumble: start##ev") .. i, ev.ramp[1], 0.0, 1.0)
+                a, ev.ramp[2] = imgui.slider_float(Language.translate("Charge rumble: max##ev") .. i, ev.ramp[2], 0.0, 1.5)
+                a, ev.ramp[3] = imgui.slider_float(Language.translate("Charge rumble: ramp time (s)##ev") .. i, ev.ramp[3], 0.2, 3.0)
             else
-                a, ev.rumble = imgui.slider_float(tr("Background rumble##ev") .. i, ev.rumble or 0, 0.0, 1.0)
+                a, ev.rumble = imgui.slider_float(Language.translate("Background rumble##ev") .. i, ev.rumble or 0, 0.0, 1.0)
             end
             if ev.heart then
-                a, ev.heart = imgui.slider_float(tr("Heartbeat: strength##ev") .. i, ev.heart, 0.0, 1.0)
-                a, ev.beat = imgui.slider_float(tr("Heartbeat: interval (s)##ev") .. i, ev.beat or 0.85, 0.4, 1.5)
+                a, ev.heart = imgui.slider_float(Language.translate("Heartbeat: strength##ev") .. i, ev.heart, 0.0, 1.0)
+                a, ev.beat = imgui.slider_float(Language.translate("Heartbeat: interval (s)##ev") .. i, ev.beat or 0.85, 0.4, 1.5)
             elseif ev.step then
-                a, ev.step = imgui.slider_float(tr("Footsteps: strength##ev") .. i, ev.step, 0.0, 1.0)
-                a, ev.beat = imgui.slider_float(tr("Footsteps: interval (s)##ev") .. i, ev.beat or 0.28, 0.15, 0.6)
+                a, ev.step = imgui.slider_float(Language.translate("Footsteps: strength##ev") .. i, ev.step, 0.0, 1.0)
+                a, ev.beat = imgui.slider_float(Language.translate("Footsteps: interval (s)##ev") .. i, ev.beat or 0.28, 0.15, 0.6)
             elseif ev.beat ~= nil then
-                a, ev.beat = imgui.slider_float(tr("Haptic beat (s, 0 = off)##ev") .. i, ev.beat or 0, 0.0, 1.0)
+                a, ev.beat = imgui.slider_float(Language.translate("Haptic beat (s, 0 = off)##ev") .. i, ev.beat or 0, 0.0, 1.0)
             end
-            a, ev.exitRumble = imgui.slider_float(tr("Rumble on exit##ev") .. i, ev.exitRumble or 0, 0.0, 2.0)
-            if ev.enterRumble ~= nil and imgui.button(tr("Test enter##ev") .. i) then
+            a, ev.exitRumble = imgui.slider_float(Language.translate("Rumble on exit##ev") .. i, ev.exitRumble or 0, 0.0, 2.0)
+            if ev.enterRumble ~= nil and imgui.button(Language.translate("Test enter##ev") .. i) then
                 local t = now_s()
                 if ev.notchEnter then trigger_notch(t, c.trigger) end
                 thunk(t, ev.enterRumble, ev.enterHaptics or 0, ev.enterTime or 0.15)
             end
             if ev.heart then
                 imgui.same_line()
-                if imgui.button(tr("Test heartbeat##ev") .. i) then
+                if imgui.button(Language.translate("Test heartbeat##ev") .. i) then
                     pulse("heavy", ev.heart, 0.07); pulse("heavy", ev.heart * 0.65, 0.06, 0.16)
                 end
             end
         else
-            a, ev.rumble = imgui.slider_float(tr("Body rumble##ev") .. i, ev.rumble or 0, 0.0, 2.0)
-            a, ev.haptics = imgui.slider_float(tr("Haptic pulses##ev") .. i, ev.haptics or 0, 0.0, 8.0)
+            a, ev.rumble = imgui.slider_float(Language.translate("Body rumble##ev") .. i, ev.rumble or 0, 0.0, 2.0)
+            a, ev.haptics = imgui.slider_float(Language.translate("Haptic pulses##ev") .. i, ev.haptics or 0, 0.0, 8.0)
             if ev.impact then
-                a, ev.impactFreq = imgui.slider_float(tr("Trigger kick: vibration##ev") .. i, ev.impactFreq, 0.0, 0.6)
-                a, ev.impact = imgui.slider_float(tr("Trigger kick: time##ev") .. i, ev.impact, 0.02, 0.2)
+                a, ev.impactFreq = imgui.slider_float(Language.translate("Trigger kick: vibration##ev") .. i, ev.impactFreq, 0.0, 0.6)
+                a, ev.impact = imgui.slider_float(Language.translate("Trigger kick: time##ev") .. i, ev.impact, 0.02, 0.2)
             end
             if imgui.button("Test##ev" .. i) then fire_event(now_s(), c, ev, 1) end
         end
@@ -2941,7 +2555,7 @@ local function fire_shotgun(now, c, prof, kick)
         S.gunDelayed[#S.gunDelayed + 1] = { at = now + t1 + 0.04, n = 2, gap = sg.pumpGap, r = sg.pumpRumble, time = 0.04, h = 1 }
     end
     S.gunShots = (S.gunShots or 0) + 1
-    S.ev = fmt("SHOT %s @%.2f", prof.label, now)
+    S.ev = Language.format("SHOT %s @%.2f", prof.label, now)
 end
 
 local function fire_shot(now, c, prof)
@@ -2958,7 +2572,7 @@ local function fire_shot(now, c, prof)
                                             r = d.r, time = d.time, h = d.h or 1 }
     end
     S.gunShots = (S.gunShots or 0) + 1
-    S.ev = fmt("SHOT %s @%.2f", prof.label, now)
+    S.ev = Language.format("SHOT %s @%.2f", prof.label, now)
 end
 
 -- dropped noticeably (counter down >= 1, or gauge down >= 25% of the highest value seen)
@@ -2991,7 +2605,7 @@ local function update_gun(now, c, pad)
         if d >= 0.5 and d <= 50 then
             trigger_notch(now, c.trigger)
             thunk(now, c.heavy and 0.5 or 0.3, c.heavy and 3 or 2, c.heavy and 0.12 or 0.08)
-            S.ev = fmt("RELOAD @%.2f", now)
+            S.ev = Language.format("RELOAD @%.2f", now)
         end
     end
 
@@ -3023,7 +2637,7 @@ local function update_gun(now, c, pad)
                 local p = math.min(1.0, held / math.max(0.2, c.ignitionSpinUp))
                 trigger_impact(now, c.trigger, 0.15, 0.5)
                 thunk(now, 1.0 + 0.8 * p, 5, 0.4)
-                S.ev = fmt("WYVERNCOUNTER (%.0f%%) @%.2f", p * 100, now)
+                S.ev = Language.format("WYVERNCOUNTER (%.0f%%) @%.2f", p * 100, now)
             elseif held > 0.25 then
                 thunk(now, 0.6, 2, 0.15)    -- tail when firing stops
             end
@@ -3057,14 +2671,14 @@ local function update_gun(now, c, pad)
             thunk(now, c.specialRumble, 4, 0.35)
             S.gunDelayed[#S.gunDelayed + 1] = { at = now + 0.12, n = 4, gap = 0.06, r = 0.6, time = 0.05, h = 1 }
         end
-        S.ev = fmt("SPECIAL AMMO @%.2f", now)
+        S.ev = Language.format("SPECIAL AMMO @%.2f", now)
     end
 
     -- ===== Focus Blast =====
     if dropped("focus") then
         trigger_impact(now, c.trigger, 0.14, 0.45)
         thunk(now, c.focusRumble, c.focusHaptics, 0.3)
-        S.ev = fmt("FOCUS BLAST @%.2f", now)
+        S.ev = Language.format("FOCUS BLAST @%.2f", now)
     end
 
     -- ===== Delayed blast / tail beats =====
@@ -3105,16 +2719,12 @@ local function update_gun(now, c, pad)
     apply_trigger(c.trigger, v)
 end
 
-local function gslider(label, c, key, lo, hi)
-    local ch, v = imgui.slider_float(label, c[key], lo, hi)
-    if ch then c[key] = v end
-end
 
 local function gun_menu(c)
     local ch
-    imgui.text(fmt("Ammo: %s  (source: %s)", GUN_PROFILES[S.gunAmmo or "normal"].label, S.gunAmmoSrc or "?"))
-    imgui.text(fmt("  field value: %s   enum name: %s", tostring(S.gunTypeVal), tostring(S.gunTypeName)))
-    imgui.text(fmt("  %s mode: %s   Shots detected: %d", c.heavy and "Ignition" or "Rapid Fire",
+    imgui.text(Language.format("Ammo: %s  (source: %s)", GUN_PROFILES[S.gunAmmo or "normal"].label, S.gunAmmoSrc or "?"))
+    imgui.text(Language.format("  field value: %s   enum name: %s", tostring(S.gunTypeVal), tostring(S.gunTypeName)))
+    imgui.text(Language.format("  %s mode: %s   Shots detected: %d", c.heavy and "Ignition" or "Rapid Fire",
         tostring(is_on(S.rules["mode"] and S.rules["mode"].last) and live("mode")), S.gunShots or 0))
 
     -- Assign an ammo type to the current value (saved)
@@ -3126,7 +2736,7 @@ local function gun_menu(c)
         for i, k in ipairs(GUN_ORDER) do if k == cur then idx = i + 1 end end
         local items = { "(auto guess)" }
         for i, l in ipairs(GUN_LABELS) do items[i + 1] = l end
-        local cm, ni = imgui.combo(fmt("Loaded ammo (value %s) is", tostring(key)), idx, items)
+        local cm, ni = imgui.combo(Language.format("Loaded ammo (value %s) is", tostring(key)), idx, items)
         if cm then
             SAVE.gunMap[S.kind][key] = (ni > 1) and GUN_ORDER[ni - 1] or nil
             save_gun()
@@ -3139,15 +2749,12 @@ local function gun_menu(c)
         if cm then S.gunOverride = ni end
     end
     if c.heavy then
-        local styles = { "heart", "counter", "piercer" }
-        local si = 1
-        for i, v in ipairs(styles) do if v == c.ignitionStyle then si = i end end
-        local cm, ni = imgui.combo("Ignition type (heart = Wyvernheart, counter = Wyverncounter)", si, styles)
-        if cm then c.ignitionStyle = styles[ni]; SAVE.ignitionStyle = c.ignitionStyle; save_gun() end
-        gslider("Ignition: spin-up / full charge time", c, "ignitionSpinUp", 0.3, 4.0)
+        local changed, style = Menu.combo_value("Ignition type (heart = Wyvernheart, counter = Wyverncounter)", c.ignitionStyle, { "heart", "counter", "piercer" })
+        if changed then c.ignitionStyle = style; SAVE.ignitionStyle = style; save_gun() end
+        Menu.slider("Ignition: spin-up / full charge time", c, "ignitionSpinUp", 0.3, 4.0)
     else
-        gslider("Rapid Fire: trigger force (scale)", c, "rapidScaleForce", 0.2, 1.0)
-        gslider("Rapid Fire: recoil per shot (scale)", c, "rapidScaleKick", 0.2, 1.0)
+        Menu.slider("Rapid Fire: trigger force (scale)", c, "rapidScaleForce", 0.2, 1.0)
+        Menu.slider("Rapid Fire: recoil per shot (scale)", c, "rapidScaleKick", 0.2, 1.0)
     end
     local tc
     tc, c.triggerOff = imgui.checkbox("Vibration only, leave the R2 trigger alone", c.triggerOff)
@@ -3159,7 +2766,7 @@ local function gun_menu(c)
 
     -- Tune the profile of the ammo in use
     local prof = GUN_PROFILES[S.gunAmmo or "normal"]
-    imgui.text(fmt("Tune %s:", prof.label))
+    imgui.text(Language.format("Tune %s:", prof.label))
     local a, b, d, e, f, g
     a, prof.trig[1] = imgui.slider_float("Trigger: click stiffness##gp", prof.trig[1], 0.0, 1.0)
     b, prof.trig[4] = imgui.slider_float("Trigger: click ends at (travel)##gp", prof.trig[4], 0.1, 1.0)
@@ -3241,14 +2848,14 @@ local function wizard_menu(rules)
     if imgui.button("Snapshot B (OFF / EMPTY)") then SNAP.B = snapshot(); build_candidates() end
     imgui.same_line()
     if imgui.button("Clear") then SNAP.A, SNAP.B, SNAP.list = nil, nil, nil end
-    imgui.text(fmt("A: %s   B: %s", SNAP.A and "taken" or "not yet", SNAP.B and "taken" or "not yet"))
+    imgui.text(Language.format("A: %s   B: %s", SNAP.A and "taken" or "not yet", SNAP.B and "taken" or "not yet"))
 
     if SNAP.list then
-        imgui.text(fmt("%d fields differ between A and B (sorted by amount of change):", #SNAP.list))
+        imgui.text(Language.format("%d fields differ between A and B (sorted by amount of change):", #SNAP.list))
         for k, cand in ipairs(SNAP.list) do
             if k > 25 then break end
             local f = S.fields[cand.i]
-            imgui.text(fmt("%s [%s]: %.3f -> %.3f", f.name, f.kind, cand.a, cand.b))
+            imgui.text(Language.format("%s [%s]: %.3f -> %.3f", f.name, f.kind, cand.a, cand.b))
             for _, r in ipairs(rules) do
                 imgui.same_line()
                 if imgui.button(r.label .. "##w" .. cand.i .. r.key) then
@@ -3260,7 +2867,7 @@ local function wizard_menu(rules)
                             st.maxIdx = 1
                             S.ampManual[r.key] = math.max(cand.a, cand.b)
                         end
-                        S.ev = fmt("Assigned %s to %s", f.name, r.label)
+                        S.ev = Language.format("Assigned %s to %s", f.name, r.label)
                         save_rule(r.key)
                     end
                 end
@@ -3270,17 +2877,11 @@ local function wizard_menu(rules)
     imgui.tree_pop()
 end
 
-local function mslider(label, c, key, lo, hi)
-    local ch, v = imgui.slider_float(label, c[key], lo, hi)
-    if ch then c[key] = v end
-end
 
 local function module_menu(c)
     local ch
-    local sides = { "R", "L" }
-    local si = c.trigger == "L" and 2 or 1
-    local chg, ni = imgui.combo("Weapon trigger", si, sides)
-    if chg then release_trigger_control(); c.trigger = sides[ni] end
+    local changed, side = Menu.combo_value("Weapon trigger", c.trigger, { "R", "L" })
+    if changed then release_trigger_control(); c.trigger = side end
     if S.kind == "ls" then
         local a, b, d
         a, c.iaiTrigger[1] = imgui.slider_float("Iai: trigger force", c.iaiTrigger[1], 0.0, 1.0)
@@ -3290,22 +2891,22 @@ local function module_menu(c)
         ch, c.holdFromStart = imgui.checkbox("Trigger stiff from the start of the charge (original LS: after the first level-up)", c.holdFromStart)
         ch, c.holdHaptic = imgui.checkbox("Body rumble during spirit charge", c.holdHaptic)
         ch, c.hapticInHook = imgui.checkbox("Follow the game rhythm like the original LS mod (smoothest)", c.hapticInHook)
-        mslider("Body rumble interval (s)", c, "holdHapticEvery", 0.0, 0.3)
+        Menu.slider("Body rumble interval (s)", c, "holdHapticEvery", 0.0, 0.3)
         imgui.text("Spirit Blade (R2):")
         ch, c.spiritEnabled = imgui.checkbox("Sword-swing feel on Spirit Blade slashes", c.spiritEnabled)
-        mslider("Slash 1: strength", c, "spiritBase", 0.0, 1.5)
-        mslider("Extra per combo hit", c, "spiritStep", 0.0, 0.5)
-        mslider("Swing length (s)", c, "spiritSwingTime", 0.1, 0.5)
-        mslider("Trigger: vibration on slash", c, "spiritImpactFreq", 0.0, 0.5)
-        mslider("Trigger: impact time", c, "spiritImpact", 0.0, 0.15)
-        mslider("Roundslash: strength", c, "roundslashRumble", 0.0, 2.5)
-        mslider("Spirit level: bonus per level", c, "spiritLevelBonus", 0.0, 0.4)
-        imgui.text(fmt("Current combo: %d", S.lsCombo or 0))
+        Menu.slider("Slash 1: strength", c, "spiritBase", 0.0, 1.5)
+        Menu.slider("Extra per combo hit", c, "spiritStep", 0.0, 0.5)
+        Menu.slider("Swing length (s)", c, "spiritSwingTime", 0.1, 0.5)
+        Menu.slider("Trigger: vibration on slash", c, "spiritImpactFreq", 0.0, 0.5)
+        Menu.slider("Trigger: impact time", c, "spiritImpact", 0.0, 0.15)
+        Menu.slider("Roundslash: strength", c, "roundslashRumble", 0.0, 2.5)
+        Menu.slider("Spirit level: bonus per level", c, "spiritLevelBonus", 0.0, 0.4)
+        imgui.text(Language.format("Current combo: %d", S.lsCombo or 0))
         if imgui.button("Test one slash (press repeatedly = combo)") then
             local t = now_s()
             if t - (S.lsLastSlash or -10) > 0.15 then ls_spirit_slash(t, c) end
         end
-        imgui.text(fmt("Iai: %s   Spirit charge: %s   stiff trigger: %s", tostring(S.lsIai), tostring(S.lsKijin), tostring(S.lsArmed)))
+        imgui.text(Language.format("Iai: %s   Spirit charge: %s   stiff trigger: %s", tostring(S.lsIai), tostring(S.lsKijin), tostring(S.lsArmed)))
     elseif c.gunModule then
         gun_menu(c)
     elseif c.generic then
@@ -3316,13 +2917,13 @@ local function module_menu(c)
         ch, c.dischargeOn = imgui.checkbox("On: rumble on Discharge", c.dischargeOn)
         ch, c.morphNotch = imgui.checkbox("Trigger click on morph", c.morphNotch)
         ch, c.morphFromTrigger = imgui.checkbox("Detect morph from trigger pulls (only when there is no mode field)", c.morphFromTrigger)
-        mslider("New mode must hold (s) to count as a morph", c, "morphStable", 0.05, 1.0)
-        mslider("Discharge must last (s) before it rumbles", c, "dischargeHold", 0.0, 1.0)
-        mslider("Morph: body rumble", c, "morphRumble", 0.0, 1.5)
-        mslider("Discharge: start rumble", c, "dischargeRumbleMin", 0.0, 1.0)
-        mslider("Discharge: end rumble", c, "dischargeRumbleMax", 0.0, 2.0)
-        mslider("Discharge: ramp time", c, "dischargeRamp", 0.3, 5.0)
-        mslider("Finisher burst: rumble", c, "finisherRumble", 0.0, 2.5)
+        Menu.slider("New mode must hold (s) to count as a morph", c, "morphStable", 0.05, 1.0)
+        Menu.slider("Discharge must last (s) before it rumbles", c, "dischargeHold", 0.0, 1.0)
+        Menu.slider("Morph: body rumble", c, "morphRumble", 0.0, 1.5)
+        Menu.slider("Discharge: start rumble", c, "dischargeRumbleMin", 0.0, 1.0)
+        Menu.slider("Discharge: end rumble", c, "dischargeRumbleMax", 0.0, 2.0)
+        Menu.slider("Discharge: ramp time", c, "dischargeRamp", 0.3, 5.0)
+        Menu.slider("Finisher burst: rumble", c, "finisherRumble", 0.0, 2.5)
         if imgui.button("Test morph") then S.lastMorph = -10; trigger_notch(now_s(), c.trigger); thunk(now_s(), c.morphRumble, c.morphHaptics, 0.1) end
         imgui.same_line()
         if imgui.button("Test finisher burst") then thunk(now_s(), c.finisherRumble, c.finisherHaptics, c.finisherTime) end
@@ -3331,12 +2932,12 @@ local function module_menu(c)
         local a
         a, c.guardResist[1] = imgui.slider_float("Guard trigger force", c.guardResist[1], 0.0, 1.0)
         a, c.guardResist[5] = imgui.slider_float("Guard snap", c.guardResist[5], 0.0, 1.0)
-        mslider("Guard hit: body rumble", c, "guardHitRumble", 0.0, 2.0)
-        mslider("Phial load: rumble per phial", c, "phialTick", 0.0, 1.0)
-        mslider("Phial discharge: base rumble", c, "dischargeBase", 0.0, 1.5)
-        mslider("Phial discharge: extra per phial", c, "dischargePerPhial", 0.0, 0.6)
-        mslider("Shield charged: rumble", c, "shieldRumble", 0.0, 2.0)
-        mslider("Savage Axe: grinding buzz (0 = off)", c, "savageBuzz", 0.0, 0.6)
+        Menu.slider("Guard hit: body rumble", c, "guardHitRumble", 0.0, 2.0)
+        Menu.slider("Phial load: rumble per phial", c, "phialTick", 0.0, 1.0)
+        Menu.slider("Phial discharge: base rumble", c, "dischargeBase", 0.0, 1.5)
+        Menu.slider("Phial discharge: extra per phial", c, "dischargePerPhial", 0.0, 0.6)
+        Menu.slider("Shield charged: rumble", c, "shieldRumble", 0.0, 2.0)
+        Menu.slider("Savage Axe: grinding buzz (0 = off)", c, "savageBuzz", 0.0, 0.6)
         if imgui.button("Test guard hit") then trigger_notch(now_s(), c.trigger, 0.04, 0.09); thunk(now_s(), c.guardHitRumble, c.guardHitHaptics, 0.12) end
         imgui.same_line()
         if imgui.button("Test 5-phial discharge") then thunk(now_s(), math.min(2.0, c.dischargeBase + c.dischargePerPhial * 5), 7, 0.45) end
@@ -3354,7 +2955,7 @@ local function module_menu(c)
                 save_rule(r.key)
             end
             imgui.same_line()
-            imgui.text(st.last ~= nil and fmt("= %.2f", st.last) or "")
+            imgui.text(st.last ~= nil and Language.format("= %.2f", st.last) or "")
         end
     end
 end
@@ -3579,22 +3180,22 @@ local function frame_body()
         if not r.t0 then r.t0 = now; r.stopAt = now + (r.dur or 60) end
         if now > r.stopAt then
             S.rec = nil
-            local out = { version = VERSION, weapon = r.kind, handling = r.tname, seconds = fmt("%.1f", now - r.t0),
+            local out = { version = VERSION, weapon = r.kind, handling = r.tname, seconds = Language.format("%.1f", now - r.t0),
                           note = "Fields sorted by number of changes. Each event = time(s):value", fields = {} }
             local list = {}
             for _, f in pairs(r.f) do list[#list + 1] = f end
             table.sort(list, function(a, b) return a.n > b.n end)
             for _, f in ipairs(list) do
                 if f.n > 0 then
-                    out.fields[#out.fields + 1] = fmt("%-40s [%s] changes=%d min=%s max=%s start=%s | %s", f.name, f.kind, f.n,
+                    out.fields[#out.fields + 1] = Language.format("%-40s [%s] changes=%d min=%s max=%s start=%s | %s", f.name, f.kind, f.n,
                         tostring(f.min), tostring(f.max), tostring(f.v0), table.concat(f.ev, " "))
                 end
             end
             out.unchanged = {}
-            for _, f in ipairs(list) do if f.n == 0 then out.unchanged[#out.unchanged + 1] = fmt("%s [%s] = %s", f.name, f.kind, tostring(f.v0)) end end
+            for _, f in ipairs(list) do if f.n == 0 then out.unchanged[#out.unchanged + 1] = Language.format("%s [%s] = %s", f.name, f.kind, tostring(f.v0)) end end
             local fname = "MHWilds_field_record_" .. tostring(r.kind) .. ".json"
             local ok = pcall(json.dump_file, fname, out)
-            S.ev = fmt("Field record saved: %s (%d fields changed)", fname, #out.fields)
+            S.ev = Language.format("Field record saved: %s (%d fields changed)", fname, #out.fields)
             log.info("[HapticPack] field record -> reframework/data/" .. fname .. (ok and "" or " FAILED"))
         else
             for _, f in ipairs(S.fields) do
@@ -3609,7 +3210,7 @@ local function frame_body()
                             -- floats that drift every frame (timers) are capped so the file stays readable
                             e.n = e.n + 1; e.last = v
                             if v < e.min then e.min = v end; if v > e.max then e.max = v end
-                            if #e.ev < 40 then e.ev[#e.ev + 1] = fmt("%.2f:%s", now - r.t0, f.kind == "float" and fmt("%.2f", v) or tostring(math.floor(v))) end
+                            if #e.ev < 40 then e.ev[#e.ev + 1] = Language.format("%.2f:%s", now - r.t0, f.kind == "float" and Language.format("%.2f", v) or tostring(math.floor(v))) end
                         end
                     end
                 end
@@ -3658,10 +3259,6 @@ local VIEW_KEYS = { "charge", "lv", "level", "timer", "bottle", "phial", "gauge"
     "arrow", "shot", "coating", "guard", "axe", "sword", "heat", "amp", "awake", "power", "spin", "bin",
     "kijin", "demon", "kyouka", "arch", "extract", "essence", "red", "white", "orange", "air", "aerial", "vault", "rush", "run" }
 
-local function slider(label, c, key, lo, hi)
-    local ch, v = imgui.slider_float(label, c[key], lo, hi)
-    if ch then c[key] = v end
-end
 
 local function weapon_menu(c)
     local ch
@@ -3673,12 +3270,10 @@ local function weapon_menu(c)
         d, it[5] = imgui.slider_float("R2 guard: snap", it[5], 0.0, 1.0)
         if a or b or d then S.sentKey = nil end
     end
-    ch, c.triggerEnabled = imgui.checkbox(fmt("Trigger force while charging (%s2)", c.trigger), c.triggerEnabled)
+    ch, c.triggerEnabled = imgui.checkbox(Language.format("Trigger force while charging (%s2)", c.trigger), c.triggerEnabled)
     do
-        local sides = { "R", "L" }
-        local si = c.trigger == "L" and 2 or 1
-        local chg, ni = imgui.combo("Trigger used for charging", si, sides)
-        if chg then release_trigger_control(); c.trigger = sides[ni] end
+        local changed, side = Menu.combo_value("Trigger used for charging", c.trigger, { "R", "L" })
+        if changed then release_trigger_control(); c.trigger = side end
     end
     do
         local ht = c.holdTrigger
@@ -3689,32 +3284,26 @@ local function weapon_menu(c)
         if a or b or d then S.sentKey = nil end
     end
     ch, c.holdHaptic = imgui.checkbox("Continuous haptics while holding", c.holdHaptic)
-    slider("Hold haptic interval (0 = every frame, like LS)", c, "holdHapticEvery", 0.0, 0.3)
-    slider("Snap (high = abrupt)", c, "resistSnap", 0.0, 1.0)
+    Menu.slider("Hold haptic interval (0 = every frame, like LS)", c, "holdHapticEvery", 0.0, 0.3)
+    Menu.slider("Snap (high = abrupt)", c, "resistSnap", 0.0, 1.0)
     ch, c.levelPulse = imgui.checkbox("Trigger click on level-up", c.levelPulse)
     do
-        local styles = { "detent", "pulse", "both" }
-        local si = 1
-        for i, v in ipairs(styles) do if v == c.notchStyle then si = i end end
-        local chg, ni = imgui.combo("Click style (detent = release then hit, pulse = like LS)", si, styles)
-        if chg then c.notchStyle = styles[ni] end
-        local srcs = { "auto", "field", "sound", "time" }
-        local ri = 1
-        for i, v in ipairs(srcs) do if v == c.levelSource then ri = i end end
-        chg, ni = imgui.combo("Level-up source", ri, srcs)
-        if chg then c.levelSource = srcs[ni] end
-        imgui.text(fmt("  using: %s   game vibration events while charging: %d", tostring(S.levelSrcUsed), S.soundEvents or 0))
+        local changed, value = Menu.combo_value("Click style (detent = release then hit, pulse = like LS)", c.notchStyle, { "detent", "pulse", "both" })
+        if changed then c.notchStyle = value end
+        changed, value = Menu.combo_value("Level-up source", c.levelSource, { "auto", "field", "sound", "time" })
+        if changed then c.levelSource = value end
+        imgui.text(Language.format("  using: %s   game vibration events while charging: %d", tostring(S.levelSrcUsed), S.soundEvents or 0))
     end
-    slider("Click: release time", c, "notchGap", 0.0, 0.15)
-    slider("Click: hit time", c, "pulseTime", 0.02, 0.2)
-    slider("Click: body rumble", c, "notchRumble", 0.0, 1.5)
-    slider("Click: haptic pulses", c, "notchHaptics", 0.0, 5.0)
-    slider("Release body rumble: base", c, "rumbleBase", 0.0, 2.0)
-    slider("Release body rumble: extra per level", c, "rumbleStep", 0.0, 1.0)
-    slider("Rumble time (s)", c, "rumbleTime", 0.05, 1.0)
-    slider("Haptic pulses: base", c, "hapticBase", 0.0, 6.0)
-    slider("Haptic pulses: extra per level", c, "hapticStep", 0.0, 3.0)
-    slider("Minimum charge (s)", c, "minCharge", 0.0, 1.0)
+    Menu.slider("Click: release time", c, "notchGap", 0.0, 0.15)
+    Menu.slider("Click: hit time", c, "pulseTime", 0.02, 0.2)
+    Menu.slider("Click: body rumble", c, "notchRumble", 0.0, 1.5)
+    Menu.slider("Click: haptic pulses", c, "notchHaptics", 0.0, 5.0)
+    Menu.slider("Release body rumble: base", c, "rumbleBase", 0.0, 2.0)
+    Menu.slider("Release body rumble: extra per level", c, "rumbleStep", 0.0, 1.0)
+    Menu.slider("Rumble time (s)", c, "rumbleTime", 0.05, 1.0)
+    Menu.slider("Haptic pulses: base", c, "hapticBase", 0.0, 6.0)
+    Menu.slider("Haptic pulses: extra per level", c, "hapticStep", 0.0, 3.0)
+    Menu.slider("Minimum charge (s)", c, "minCharge", 0.0, 1.0)
     if imgui.button("Test level-up (hold R2 to feel it)") then
         local t = now_s()
         S.lastLevelUpAt = -10.0
@@ -3748,26 +3337,22 @@ re.on_draw_ui(function()
     ce, S.enabled = imgui.checkbox("Enable Haptic Pack", S.enabled)
     if ce and not S.enabled then release_trigger_control() end
     do
-        local langs = { "en", "vi" }
-        local li = (LANG == "vi") and 2 or 1
-        local cg, ng = _imgui.combo("Language / Ngôn ngữ", li, { "English", "Tiếng Việt" })
-        if cg then LANG = langs[ng]; SAVE.lang = LANG; pcall(json.dump_file, SAVE_FILE, SAVE) end
+        local changed, code = Menu.combo_value("Language / Ngôn ngữ", Language.current(), { "en", "vi" }, { "English", "Tiếng Việt" })
+        if changed then Language.set(code); SAVE.lang = code; pcall(json.dump_file, SAVE_FILE, SAVE) end
     end
 
     -- ---- controller ----
     local det = (S.detected == "dualsense") and "DualSense" or ((S.detected == "rumble") and "rumble controller" or "not recognized")
-    local outLabels = { fmt(tr("Auto (detected: %s)"), tr(det)),
+    local outLabels = { Language.format(Language.translate("Auto (detected: %s)"), Language.translate(det)),
         "DualSense (adaptive triggers + haptics)", "Rumble controller: Xbox / XInput / Flydigi Vader 5 (trigger motors + body)" }
-    local oi = 1
-    for i, m in ipairs(OUT_MODES) do if m == S.outMode then oi = i end end
-    local co, no = imgui.combo("Controller type", oi, outLabels)
-    if co then
-        S.outMode = OUT_MODES[no]
+    local outChanged, outMode = Menu.combo_value("Controller type", S.outMode, OUT_MODES, outLabels)
+    if outChanged then
+        S.outMode = outMode
         if S.outMode == "auto" then update_detect(now_s(), get_pad(), true) else set_out(S.outMode) end
         save_out()
     end
-    imgui.text(fmt(tr("  Running: %s   (device reports: %s)"),
-        tr(S.out == "rumble" and "rumble mode" or "DualSense mode"), S.detectedName))
+    imgui.text(Language.format(Language.translate("  Running: %s   (device reports: %s)"),
+        Language.translate(S.out == "rumble" and "rumble mode" or "DualSense mode"), S.detectedName))
 
     local cl
     cl, S.lite = imgui.checkbox("Lite mode (co-op) — NOTE: makes charge-hold vibration sparser and weaker", S.lite)
@@ -3775,7 +3360,7 @@ re.on_draw_ui(function()
     if cl then SAVE.lite = S.lite; pcall(json.dump_file, SAVE_FILE, SAVE) end
 
     -- ---- weapon ----
-    imgui.text(tr("Weapon: ") .. tr(S.kind and KIND_LABEL[S.kind] or "not supported"))
+    imgui.text(Language.translate("Weapon: ") .. Language.translate(S.kind and KIND_LABEL[S.kind] or "not supported"))
     do
         if not KIND_OPT_LABELS then
             KIND_OPT_LABELS = {}
@@ -3783,14 +3368,12 @@ re.on_draw_ui(function()
                 KIND_OPT_LABELS[i] = (k == "auto") and "Auto-detect" or ((k == "off") and "Off" or KIND_LABEL[k])
             end
         end
-        local ki = 1
-        for i, o in ipairs(KIND_OPTS) do if o == S.kindOverride then ki = i end end
-        local ch, ni = imgui.combo("Force weapon type (if detected wrong)", ki, KIND_OPT_LABELS)
-        if ch then S.kindOverride = KIND_OPTS[ni] end
+        local ch, kind = Menu.combo_value("Force weapon type (if detected wrong)", S.kindOverride, KIND_OPTS, KIND_OPT_LABELS)
+        if ch then S.kindOverride = kind end
     end
 
     if S.kind and CFG[S.kind] then
-        if imgui.tree_node(tr("Tune ") .. tr(CFG[S.kind].name)) then
+        if imgui.tree_node(Language.translate("Tune ") .. Language.translate(CFG[S.kind].name)) then
             if CFG[S.kind].module then module_menu(CFG[S.kind]) else weapon_menu(CFG[S.kind]) end
             imgui.tree_pop()
         end
@@ -3825,11 +3408,11 @@ re.on_draw_ui(function()
             if gv or gg then save_out() end
             local li = S.lastPresetInfo
             if li then
-                imgui.text(fmt("  Last impact: preset strength %.2f length %.2fs -> played %.2f for %.2fs",
+                imgui.text(Language.format("  Last impact: preset strength %.2f length %.2fs -> played %.2f for %.2fs",
                     li.s, li.d, S.lastHitK or 0, S.lastHitD or 0))
                 if #li.dump > 0 then imgui.text("  preset: " .. table.concat(li.dump, "  ")) end
             end
-            imgui.text(fmt("  Game vibration sources received: haptic %d | motor %d | your sound events %d (others %d)",
+            imgui.text(Language.format("  Game vibration sources received: haptic %d | motor %d | your sound events %d (others %d)",
                 S.vibSrc.adv, S.vibSrc.motor, S.vibSrc.sound, S.vibSrc.soundOther))
             imgui.text("  (hit a few times: the counter that goes up is the active source; if all stay 0, please report it)")
             local sa
@@ -3847,13 +3430,11 @@ re.on_draw_ui(function()
         end
         imgui.text("Motor roles (press Test to find where each motor is on your controller):")
         for i, m in ipairs(load_vib_motors()) do
-            local ri = 5
-            for k, r in ipairs(ROLES) do if r == m.role then ri = k end end
             local labels = {}
             for k, r in ipairs(ROLES) do labels[k] = ROLE_LABEL[r] end
-            local cr, nr = imgui.combo(m.name .. " (" .. tostring(m.value) .. ")##mr" .. i, ri, labels)
+            local cr, role = Menu.combo_value(m.name .. " (" .. tostring(m.value) .. ")##mr" .. i, m.role, ROLES, labels, 5)
             if cr then
-                m.role = ROLES[nr]; m.enabled = m.role ~= "off"
+                m.role = role; m.enabled = m.role ~= "off"
                 S.motorRoles[m.name] = m.role
                 count_roles(); save_out()
             end
@@ -3875,7 +3456,7 @@ re.on_draw_ui(function()
         if not st then
             imgui.text("Plugin not detected. Put MHWHapticBT.dll in reframework/plugins and restart the game.")
         else
-            imgui.text(fmt("Plugin %s  |  bridge: %s  |  DualSense found: %s  Bluetooth: %s", tostring(st.version),
+            imgui.text(Language.format("Plugin %s  |  bridge: %s  |  DualSense found: %s  Bluetooth: %s", tostring(st.version),
                 S.btBridge and "ON" or "OFF", tostring(st.found), tostring(st.bluetooth)))
             if st.found and not st.bluetooth then imgui.text("  USB cable: the game plays its own haptics, the plugin stays idle.") end
         end
@@ -3906,7 +3487,7 @@ re.on_draw_ui(function()
         c, BTCFG.swap = imgui.checkbox("BT: swap left/right actuators", BTCFG.swap); mark(c)
         S.btHitGain, S.btHapticPulse, S.btGameHaptics = BTCFG.hitGain, BTCFG.pulseGain, BTCFG.gameHaptics
         for _, x in ipairs(ch) do if x then save_bt(); break end end
-        if not BTCFG.triggers then imgui.text_colored(tr("  ! 'BT: send adaptive triggers too' is OFF - game triggers are not sent over Bluetooth"), 0xFF40A0FF) end
+        if not BTCFG.triggers then imgui.text_colored(Language.translate("  ! 'BT: send adaptive triggers too' is OFF - game triggers are not sent over Bluetooth"), 0xFF40A0FF) end
         if imgui.button("Test: vibration") then
             BTCFG.testPulse = (BTCFG.testPulse or 0) + 1; save_bt()
         end
@@ -3928,21 +3509,21 @@ re.on_draw_ui(function()
     end
 
     if imgui.tree_node("Diagnostics (troubleshooting / bug reports)") then
-        imgui.text(fmt("Script cost: %.3f ms/frame (avg %.3f, 5s peak %.3f)", perf.last, perf.avg, perf.peak))
-        imgui.text(tr("Weapon handling type: ") .. (S.typeName ~= "" and S.typeName or tr("(none)")))
-        imgui.text(fmt("Trigger effect sent (%s2): force %.2f  vib %.2f  from %.2f  to %.2f  snap %.2f",
+        imgui.text(Language.format("Script cost: %.3f ms/frame (avg %.3f, 5s peak %.3f)", perf.last, perf.avg, perf.peak))
+        imgui.text(Language.translate("Weapon handling type: ") .. (S.typeName ~= "" and S.typeName or Language.translate("(none)")))
+        imgui.text(Language.format("Trigger effect sent (%s2): force %.2f  vib %.2f  from %.2f  to %.2f  snap %.2f",
             S.sentSide or "-", lastSent[1], lastSent[2], lastSent[3], lastSent[4], lastSent[5]))
-        imgui.text(fmt("Triggers: L2=%.2f  R2=%.2f   Charging: %s  Level: %d   Releases: %d",
+        imgui.text(Language.format("Triggers: L2=%.2f  R2=%.2f   Charging: %s  Level: %d   Releases: %d",
             S.lt, S.rt, tostring(S.charging), S.level, S.releases))
-        imgui.text(tr("Last event: ") .. S.ev)
-        local why = tr("none")
+        imgui.text(Language.translate("Last event: ") .. S.ev)
+        local why = Language.translate("none")
         if #S.vibWhy > 0 then
             why = ""
-            for i, w in ipairs(S.vibWhy) do why = why .. (i > 1 and ", " or "") .. tr(w) end
+            for i, w in ipairs(S.vibWhy) do why = why .. (i > 1 and ", " or "") .. Language.translate(w) end
         end
-        imgui.text(tr("Continuous rumble because of: ") .. why)
-        imgui.text(tr("Haptic captured: ") .. tostring(captured) .. tr(" (while charging: ") .. tostring(capturedCharging) .. ")")
-        imgui.text(tr("Sound hook: ") .. tr(not S.soundHookInstalled and "not installed (not needed)"
+        imgui.text(Language.translate("Continuous rumble because of: ") .. why)
+        imgui.text(Language.translate("Haptic captured: ") .. tostring(captured) .. Language.translate(" (while charging: ") .. tostring(capturedCharging) .. ")")
+        imgui.text(Language.translate("Sound hook: ") .. Language.translate(not S.soundHookInstalled and "not installed (not needed)"
             or (S.goFilterOff and "installed (cannot filter by player)" or "installed (only your events)")))
         for k, v in pairs(call_status) do imgui.text("  " .. k .. " -> " .. v) end
         if imgui.button("Re-detect controller") then update_detect(now_s(), get_pad(), true) end
@@ -3968,8 +3549,8 @@ re.on_draw_ui(function()
             end
             if show then
                 shown = shown + 1
-                local val = f.last ~= nil and (f.kind == "float" and fmt("%.3f", f.last) or tostring(math.floor(f.last))) or "?"
-                local line = fmt("%s [%s] = %s", f.name, f.kind, val)
+                local val = f.last ~= nil and (f.kind == "float" and Language.format("%.3f", f.last) or tostring(math.floor(f.last))) or "?"
+                local line = Language.format("%s [%s] = %s", f.name, f.kind, val)
                 if now - f.changedAt < 1.0 then
                     imgui.text_colored(line, 0xFF00FFFF)
                 else
@@ -3977,7 +3558,7 @@ re.on_draw_ui(function()
                 end
             end
         end
-        imgui.text(fmt("(%d / %d field)", shown, #S.fields))
+        imgui.text(Language.format("(%d / %d field)", shown, #S.fields))
         if imgui.button("Write all fields to the log") then
             for _, f in ipairs(S.fields) do
                 log.info(string.format("[HapticPack][field] %s :: %s [%s] = %s", f.owner, f.name, f.kind, tostring(f.last)))

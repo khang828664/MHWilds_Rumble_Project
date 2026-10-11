@@ -1,2 +1,2 @@
-local SteamCon_Haptic = require("hardware/haptic_pads.lua")
-local SteamCon_Vcm = require("hardware/vcm.lua")
+local SteamCon_Haptic = require("haptic_pack.hardwares.haptic_pad")
+local SteamCon_Vcm = require("haptic_pack.hardwares.vcm")

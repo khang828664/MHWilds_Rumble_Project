@@ -1,0 +1,26 @@
+{
+  "name": "mhwilds-haptic-pack",
+  "version": "1.0.0",
+  "description": "",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build:main": "npx --yes luabundler@1.2.3 bundle autorun/main.lua -p \"autorun/?.lua\" -p \"autorun/?/init.lua\" -o dist/MHWilds_Haptic_Pack_main.lua",
+    "build:legacy": "npx --yes luabundler@1.2.3 bundle autorun/MHWilds_Haptic_Pack.lua -p \"autorun/?.lua\" -p \"autorun/?/init.lua\" -o dist/MHWilds_Haptic_Pack.lua",
+    "build": "npm run build:main"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khang828664/MHWilds_Rumble_Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/khang828664/MHWilds_Rumble_Project/issues"
+  },
+  "homepage": "https://github.com/khang828664/MHWilds_Rumble_Project#readme",
+  "private": true
+}
