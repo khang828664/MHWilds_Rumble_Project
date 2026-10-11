@@ -1,0 +1,2 @@
+-- VCM - Voice Coil Motor (Voice Coil Actuator)
+-- Popular controllers using it: Dualsense (PS5 Controller), Steam Controller

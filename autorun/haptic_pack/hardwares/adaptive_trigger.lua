@@ -1,0 +1,2 @@
+-- Adaptive Trigger
+-- Popular controllers using it: Dualsense (PS5 controllers), Flydigi 6,

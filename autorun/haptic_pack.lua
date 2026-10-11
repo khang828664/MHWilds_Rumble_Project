@@ -35,4 +35,8 @@ local KIND_LABEL = {
     lbg = "Light Bowgun", 
 }
 
+-- Load Weapons' Haptic Patterns
+-- Test Xbox
+local hammer =  require("haptic_pack/xbox/XB_Hammer.lua")
+
 log.info("[Haptic Pack] loading v" .. VERSION)

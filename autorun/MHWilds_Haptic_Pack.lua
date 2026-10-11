@@ -16,7 +16,7 @@
 -- No weapon class is hooked directly: every frame the script reads the character's WeaponHandling,
 -- identifies the weapon by its type name (app.cHunterWpXXHandling) and auto-detects the fields it needs.
 -- =============================================
-local VERSION = "1.0.0"
+local VERSION = "1.1.0"
 log.info("[HapticPack] Loading v" .. VERSION)
 
 -- =============================================
@@ -71,6 +71,60 @@ local imgui = setmetatable({
 }, { __index = _imgui })
 -- Vietnamese translations (key = the English text used in this file)
 VI = {
+    ["Test: vibration"] = "Test: rung",
+    ["  USB cable: the game plays its own haptics, the plugin stays idle."] = "  Cắm dây USB: game tự phát haptic, plugin đứng yên.",
+    ["Log for bug reports: reframework/data/MHWHapticBT.log"] = "Log để báo lỗi: reframework/data/MHWHapticBT.log",
+    ["BT: game haptics"] = "BT: haptic của game",
+    ["Off (only the mod's weapon effects)"] = "Tắt (chỉ hiệu ứng vũ khí của mod)",
+    ["By name: hits, charges, guards (recommended)"] = "Theo tên: trúng đòn, tụ lực, đỡ (khuyên dùng)",
+    ["Legacy: game's own rumble (everything vibrates)"] = "Kiểu cũ: rung gốc của game (cái gì cũng rung)",
+    ["Reset Bluetooth settings to defaults"] = "Đặt lại cài đặt Bluetooth về mặc định",
+    ["BT: L2 trigger"] = "BT: cò L2",
+    ["Free (Focus Mode stays light)"] = "Tự do (Focus Mode nhẹ tay)",
+    ["Game effects, light"] = "Hiệu ứng của game, nhẹ",
+    ["Game effects, full force"] = "Hiệu ứng của game, đủ lực",
+    ["BT: fade-out between hits (ms)"] = "BT: thời gian tắt dần giữa các cú (ms)",
+    ["BT: strength curve (higher = weak and strong closer)"] = "BT: đường cong lực (cao = nhẹ và mạnh gần nhau hơn)",
+    ["Research: log every weapon field change (re2_framework_log.txt)"] = "Nghiên cứu: ghi mọi thay đổi field vũ khí vào log (re2_framework_log.txt)",
+    ["Record weapon fields for 60 s (close the menu and play)"] = "Ghi field vũ khí 60 giây (đóng menu rồi đánh)",
+    ["  RECORDING %s... %.0f s left - do the weapon's moves now"] = "  ĐANG GHI %s... còn %.0f s - ra các chiêu của vũ khí đi",
+    ["Save haptic catalog (research)"] = "Lưu danh mục haptic (nghiên cứu)",
+    ["  Haptic catalog: %d different game haptics seen (auto-saved every 30 s)"] = "  Danh mục haptic: đã gặp %d loại haptic của game (tự lưu mỗi 30 giây)",
+    ["BT: experimental header 0xF2 (research - haptics went silent with it)"] = "BT: header thử nghiệm 0xF2 (nghiên cứu - từng làm mất haptic)",
+    ["BT: haptic waveform"] = "BT: kiểu sóng haptic",
+    ["Classic (1.1.1)"] = "Cổ điển (1.1.1)",
+    ["Punchy (0.1.4)"] = "Gắt (0.1.4)",
+    ["Optimized (recommended)"] = "Tối ưu (khuyên dùng)",
+    ["BT: keep haptic stream alive (ms after last hit)"] = "BT: giữ luồng haptic chạy (ms sau cú rung cuối)",
+    ["BT: silent pre-roll packets"] = "BT: số gói im lặng đệm trước",
+    ["Test: trigger wall 3 s (hold R2/L2)"] = "Test: tường cò 3 giây (bóp R2/L2)",
+    ["  ! 'BT: send adaptive triggers too' is OFF - game triggers are not sent over Bluetooth"] = "  ! Ô 'BT: gửi cả cò thích ứng' đang TẮT - cò của game không được gửi qua Bluetooth",
+    ["BT: trigger refresh (ms, 0 = off)"] = "BT: gửi lại cò mỗi (ms, 0 = tắt)",
+    ["Dump last game haptic preset (research)"] = "Ghi cấu trúc preset haptic cuối của game (nghiên cứu)",
+    ["Preset dump: %d lines"] = "Đã ghi preset: %d dòng",
+    ["BT: trigger force multiplier"] = "BT: nhân lực cò",
+    ["BT: hit strength"] = "BT: độ mạnh khi chém trúng",
+    ["BT: haptic beat strength"] = "BT: độ mạnh nhịp haptic",
+    ["BT: also convert every game haptic (busy: UI clicks, steps...)"] = "BT: chuyển cả mọi haptic của game (dày: bấm menu, bước chân...)",
+    ["DualSense over Bluetooth (MHWHapticBT plugin)"] = "DualSense qua Bluetooth (plugin MHWHapticBT)",
+    ["Plugin not detected. Put MHWHapticBT.dll in reframework/plugins and restart the game."] = "Chưa thấy plugin. Chép MHWHapticBT.dll vào reframework/plugins rồi mở lại game.",
+    ["Plugin %s  |  running: %s  |  bridge: %s"] = "Plugin %s  |  đang chạy: %s  |  cầu nối: %s",
+    ["  DualSense found: %s  Bluetooth: %s  opened: %s  (pid %s, in %s / out %s bytes)"] = "  Thấy DualSense: %s  Bluetooth: %s  đã mở: %s  (pid %s, vào %s / ra %s byte)",
+    ["  Reports sent: haptics %s, triggers %s  |  errors %s (last %s)  |  write: %s"] = "  Gói đã gửi: haptic %s, cò %s  |  lỗi %s (cuối %s)  |  cách ghi: %s",
+    ["  Calls seen by the plugin: vibration %s, trigger %s  |  %s"] = "  Plugin bắt được: rung %s, cò %s  |  %s",
+    ["Bluetooth bridge"] = "Cầu nối Bluetooth",
+    ["Auto (when the plugin finds a Bluetooth DualSense)"] = "Tự động (khi plugin thấy DualSense Bluetooth)",
+    ["BT haptics: strength"] = "Haptic BT: độ mạnh",
+    ["BT haptics: heavy tone (Hz)"] = "Haptic BT: tần số rung nặng (Hz)",
+    ["BT haptics: light tone (Hz)"] = "Haptic BT: tần số rung nhẹ (Hz)",
+    ["BT: send adaptive triggers too"] = "BT: gửi cả cò thích ứng",
+    ["BT: swap left/right actuators"] = "BT: đảo bên trái/phải",
+    ["BT: unsigned samples (try if haptics only buzz/click)"] = "BT: mẫu không dấu (thử nếu haptic chỉ rè/tách)",
+    ["BT: hold each request (ms)"] = "BT: giữ mỗi lệnh (ms)",
+    ["Test: plugin pulse (direct)"] = "Test: plugin rung trực tiếp",
+    ["Test: through the game (motor request)"] = "Test: qua game (lệnh motor)",
+    ["Log: reframework/data/MHWHapticBT.log"] = "Log: reframework/data/MHWHapticBT.log",
+    ["Switch gauge field looks like a timer (ignored)"] = "Field thanh switch giống bộ đếm thời gian (bỏ qua)",
     ["Holding shield"] = "Đang giữ khiên",
     ["Holding shield: strain rumble (rumble controllers, 0 = off)"] = "Giữ khiên: rung gồng (tay rung thường, 0 = tắt)",
     ["  %s mode: %s   Shots detected: %d"] = "  Chế độ %s: %s   Số phát đã nhận: %d",
@@ -615,7 +669,8 @@ local CFG = {
 local RULES = {
     sa = {
         { key = "mode",      label = "Sword/Axe mode",     type = "change",  pats = { { "sword", "mode" }, { "axe", "mode" }, { "weapon", "mode" }, { "mode" }, { "style" } } },
-        { key = "gauge",     label = "Switch gauge",      type = "counter", pats = { { "switch", "gauge" }, { "bin", "gauge" }, { "bottle", "gauge" }, { "gauge" } } },
+        { key = "gauge",     label = "Switch gauge",      type = "counter",
+          exclude = { "timer", "time", "recover", "auto", "interval", "wait", "speed", "rate", "cool" }, pats = { { "switch", "gauge" }, { "bin", "gauge" }, { "bottle", "gauge" }, { "gauge" } } },
         { key = "discharge", label = "Element/Zero Sum Discharge", type = "flag", pats = { { "discharge", "active" }, { "discharge", "timer" }, { "burst", "active" } } },
     },
     cb = {
@@ -914,6 +969,14 @@ local function count_roles()
     end
 end
 
+-- Body effects go through the motor path (addVibrationRequest) in rumble mode, and also for a DualSense on
+-- Bluetooth when the MHWHapticBT plugin is active: the plugin turns those requests into real haptics.
+S.btBridge = false
+S.btHitGain = 0.55        -- Bluetooth DualSense: hit-wave strength (Vader uses gameVibGain x4)
+S.btHapticPulse = 0.3     -- Bluetooth DualSense: strength of a replayed "haptic" beat (Vader uses 1.5)
+S.btGameHaptics = false   -- Bluetooth DualSense: also turn every game haptic preset into a hit (off: too busy)
+local function body_via_motors() return S.out == "rumble" or S.btBridge == true end
+
 -- Send rumble to motors by role. "body" = heavy + light.
 local function out_rumble(strength, role)
     if strength <= 0 then return end
@@ -941,7 +1004,8 @@ local function out_rumble(strength, role)
     for _, m in ipairs(motors) do
         local r = m.role
         if r ~= "off" and (r == role or (role == "body" and (r == "heavy" or r == "light"))) then
-            pad_call(pad, SIG_VIB, strength, m.value)
+            -- Bluetooth bridge: +8 marks the request as the mod's own (the plugin drops the game's legacy rumble)
+            pad_call(pad, SIG_VIB, (S.btBridge and S.out ~= "rumble") and (strength + 8.0) or strength, m.value)
         end
     end
     S.selfMotor = false
@@ -966,7 +1030,7 @@ local function process_pulses()
         if t >= tm.u then S.testMotor = nil
         else
             local pad = get_pad()
-            if pad then S.selfMotor = true; pad_call(pad, SIG_VIB, 0.9, tm.v); S.selfMotor = false end
+            if pad then S.selfMotor = true; pad_call(pad, SIG_VIB, (S.btBridge and S.out ~= "rumble") and 8.9 or 0.9, tm.v); S.selfMotor = false end
         end
     end
     if #pulses == 0 then return end
@@ -990,10 +1054,11 @@ local savedInstAddr, savedPresetAddr, capClock = nil, nil, -10.0
 local clock = os and os.clock or function() return 0 end
 
 local function play_haptic()
-    if S.out == "rumble" then
+    if body_via_motors() then
         -- rumble controllers: haptic -> one short rumble beat (light motor leads, heavy pads)
-        pulse("light", S.hapticRumble, 0.09)
-        pulse("heavy", S.hapticRumble * 0.6, 0.08)
+        local hr = S.btBridge and S.btHapticPulse or S.hapticRumble
+        pulse("light", hr, 0.09)
+        pulse("heavy", hr * 0.6, 0.08)
         if not S.keepPreset then return end
     end
     if not (saved_inst and #saved_preset > 0) then
@@ -1074,6 +1139,245 @@ local function analyze_preset(obj)
     return info
 end
 
+-- Dump the structure of the last game haptic preset to reframework/data/MHWilds_preset_dump.json
+-- (research: does the preset carry the raw haptic waveform we could replay over Bluetooth?)
+local function dump_value(out, prefix, v, depth, seen)
+    if #out > 600 then return end
+    local tv = type(v)
+    if tv ~= "userdata" then out[#out + 1] = prefix .. " = " .. tostring(v); return end
+    local okt, td = pcall(v.get_type_definition, v)
+    local tname = (okt and td) and td:get_full_name() or "?"
+    local okA, addr = pcall(v.get_address, v)
+    local key = okA and tostring(addr) or tostring(v)
+    if seen[key] then out[#out + 1] = prefix .. " : " .. tname .. " (already shown)"; return end
+    seen[key] = true
+    -- arrays / lists: size + first elements
+    local okS, size = pcall(v.get_size, v)
+    if okS and type(size) == "number" then
+        out[#out + 1] = fmt("%s : %s  [array, %d elements]", prefix, tname, size)
+        local parts = {}
+        for i = 0, math.min(size, 32) - 1 do
+            local oke, e = pcall(v.get_element, v, i)
+            if oke then
+                if type(e) == "userdata" then
+                    if i < 4 and depth < 3 then dump_value(out, prefix .. "[" .. i .. "]", e, depth + 1, seen) end
+                else parts[#parts + 1] = tostring(e) end
+            end
+        end
+        if #parts > 0 then out[#out + 1] = prefix .. " values: " .. table.concat(parts, ", ") end
+        return
+    end
+    out[#out + 1] = prefix .. " : " .. tname
+    if depth >= 3 or not okt or not td then return end
+    local t, guard = td, 0
+    while t and guard < 4 do
+        local okf, fields = pcall(t.get_fields, t)
+        if okf and fields then
+            for _, f in ipairs(fields) do
+                if not f:is_static() then
+                    local okv, fv = pcall(f.get_data, f, v)
+                    local ft = f:get_type() and f:get_type():get_full_name() or "?"
+                    if okv then
+                        if type(fv) == "userdata" then dump_value(out, prefix .. "." .. f:get_name(), fv, depth + 1, seen)
+                        else out[#out + 1] = fmt("%s.%s (%s) = %s", prefix, f:get_name(), ft, tostring(fv)) end
+                    else
+                        out[#out + 1] = fmt("%s.%s (%s) = <unreadable>", prefix, f:get_name(), ft)
+                    end
+                end
+            end
+        end
+        t = t:get_parent_type(); guard = guard + 1
+    end
+end
+
+local function dump_last_preset()
+    local out = {}
+    out[#out + 1] = "captured: " .. tostring(captured) .. "  (hit something in game first, then press Dump)"
+    out[#out + 1] = "arg3 (id/flags) = " .. tostring(saved_preset[1]) .. "   arg6 = " .. tostring(saved_preset[4])
+    if saved_inst then dump_value(out, "instance", saved_inst, 2, {}) end
+    if saved_preset[2] then dump_value(out, "preset", saved_preset[2], 0, {}) end
+    if saved_preset[3] then dump_value(out, "requestData", saved_preset[3], 1, {}) end
+    local ok, err = pcall(json.dump_file, "MHWilds_preset_dump.json", out)
+    log.info("[HapticPack] preset dump: " .. #out .. " lines -> reframework/data/MHWilds_preset_dump.json " .. (ok and "" or tostring(err)))
+    S.ev = fmt("Preset dump: %d lines", #out)
+end
+
+-- =============================================
+-- HAPTIC CATALOG (research): which audio-haptic resource does each game vibration play?
+-- Goal: replay the game's real haptic waveforms over Bluetooth. Step 1 = learn resource paths + the API
+-- of via.audiorender.VibrationSourceResourceHolder. Writes reframework/data/MHWilds_haptic_catalog.json
+-- =============================================
+local CATALOG, catalogN, catalogDirty, catalogProbe = {}, 0, false, nil
+S.catalogOn = false   -- research tool (haptic catalog), off in release builds
+
+local function list_methods(td, maxN)
+    local names, t, guard = {}, td, 0
+    while t and guard < 5 do
+        local okm, ms = pcall(t.get_methods, t)
+        if okm and ms then
+            for _, m in ipairs(ms) do
+                local okn, n = pcall(m.get_name, m)
+                local okp, np = pcall(m.get_num_params, m)
+                local okr, rt = pcall(m.get_return_type, m)
+                if okn then names[#names + 1] = fmt("%s::%s(%s) -> %s", t:get_full_name(), n, okp and tostring(np) or "?",
+                                                      (okr and rt) and rt:get_full_name() or "?") end
+                if #names >= (maxN or 120) then return names end
+            end
+        end
+        t = t:get_parent_type(); guard = guard + 1
+    end
+    return names
+end
+
+-- calls only zero-parameter get_* methods (read-only getters) and records what they return
+local function probe_getters(obj, out, prefix, depth)
+    local okt, td = pcall(obj.get_type_definition, obj)
+    if not (okt and td) then return end
+    local t, guard = td, 0
+    while t and guard < 5 do
+        local okm, ms = pcall(t.get_methods, t)
+        if okm and ms then
+            for _, m in ipairs(ms) do
+                local n = m:get_name()
+                local okp, np = pcall(m.get_num_params, m)
+                if okp and np == 0 and n:sub(1, 4) == "get_" and not n:find("Type") then
+                    local okc, r = pcall(m.call, m, obj)
+                    if okc then
+                        if type(r) == "userdata" then
+                            local okrt, rtd = pcall(r.get_type_definition, r)
+                            local rn = (okrt and rtd) and rtd:get_full_name() or "?"
+                            local okstr, str = pcall(r.call, r, "ToString")
+                            out[#out + 1] = fmt("%s.%s() = <%s> %s", prefix, n, rn, okstr and tostring(str) or "")
+                            if depth < 1 then probe_getters(r, out, prefix .. "." .. n .. "()", depth + 1) end
+                        else
+                            out[#out + 1] = fmt("%s.%s() = %s", prefix, n, tostring(r))
+                        end
+                    else
+                        out[#out + 1] = fmt("%s.%s() = <error>", prefix, n)
+                    end
+                end
+            end
+        end
+        t = t:get_parent_type(); guard = guard + 1
+    end
+end
+
+local function holder_path(h)
+    if not h then return nil end
+    for _, mn in ipairs({ "get_ResourcePath", "get_Path", "ToString" }) do
+        local ok, r = pcall(h.call, h, mn)
+        if ok and type(r) == "string" and r ~= "" then return r end
+    end
+    return nil
+end
+
+local function catalog_record(args)
+    local addr = sdk.to_int64(args[4]) or 0
+    if addr == 0 then return end
+    local e = CATALOG[addr]
+    if e then e.n = e.n + 1; e.last = S.kind or "?"; catalogDirty = true; return end
+    local p = sdk.to_managed_object(args[4])
+    if not p then return end
+    local function fld(n) local ok, v = pcall(p.get_field, p, n); return ok and v or nil end
+    local h = fld("_VibAudioSource")
+    e = { n = 1, id = fld("_VibrationTrigger"), vol = fld("_Volume"), dur = fld("_DurationAD"), node = fld("_VibrationOutputNode"),
+          path = holder_path(h), bnvib = holder_path(fld("_BnvibResource")), first = S.kind or "?", last = S.kind or "?" }
+    CATALOG[addr] = e; catalogN = catalogN + 1; catalogDirty = true
+    if not catalogProbe and h then                    -- first time: learn the holder API once
+        catalogProbe = { "VibrationSourceResourceHolder methods:" }
+        local okt, td = pcall(h.get_type_definition, h)
+        if okt and td then for _, l in ipairs(list_methods(td, 150)) do catalogProbe[#catalogProbe + 1] = "  " .. l end end
+        catalogProbe[#catalogProbe + 1] = "getter results:"
+        probe_getters(h, catalogProbe, "holder", 0)
+    end
+end
+
+local function save_catalog(quiet)
+    local list = {}
+    for _, e in pairs(CATALOG) do list[#list + 1] = e end
+    table.sort(list, function(a, b) return a.n > b.n end)
+    local out = { version = VERSION, presets = #list, entries = {}, probe = catalogProbe or { "(no preset with an audio source seen yet)" } }
+    for i, e in ipairs(list) do
+        out.entries[i] = fmt("x%-4d id=%s vol=%s dur=%s node=%s weapon=%s/%s path=%s bnvib=%s", e.n, tostring(e.id),
+            tostring(e.vol), tostring(e.dur), tostring(e.node), e.first, e.last, tostring(e.path), tostring(e.bnvib))
+    end
+    local ok, err = pcall(json.dump_file, "MHWilds_haptic_catalog.json", out)
+    catalogDirty = false
+    if not quiet then S.ev = fmt("Haptic catalog: %d presets saved", #list) end
+    log.info("[HapticPack] haptic catalog: " .. #list .. " presets -> reframework/data/MHWilds_haptic_catalog.json " .. (ok and "" or tostring(err)))
+end
+
+-- =============================================
+-- BLUETOOTH: play the game's haptics by PRESET NAME (paths learned from the haptic catalog)
+--  Wired, these are audio haptics; tiny ones (sword grab, stance, menu cursor) are barely felt.
+--  Over Bluetooth the game's legacy rumble turned every one of them into a full pulse, so the plugin
+--  now ignores that rumble and the mod decides here, by name, what deserves a vibration.
+-- =============================================
+local PRESET_RULES = {   -- first match wins; k = base strength, kind = "hit" (impact wave) or "tap" (short pulse)
+    { "silence", nil }, { "sys_gui", nil }, { "whoosh", nil }, { "grab", nil }, { "hand_accent", nil },
+    { "carry_on", nil }, { "mvmt", nil }, { "pull_loop", nil }, { "rope", nil }, { "gimmick", nil },
+    { "hit_bullet_small", "hit", 0.35 }, { "hit_bullet_middle", "hit", 0.55 }, { "hit_bullet", "hit", 0.5 },
+    { "hit_slash_small", "hit", 0.5 }, { "hit_slash_middle", "hit", 0.75 }, { "hit_slash_large", "hit", 1.0 },
+    { "hit_burst", "hit", 0.9 }, { "hit_blast", "hit", 0.9 }, { "_hit", "hit", 0.7 },
+    { "ground_imp", "hit", 0.8 }, { "final_blow", "hit", 1.1 }, { "_imp", "hit", 0.6 },
+    { "charge_lv1", "tap", 0.35 }, { "charge_lv2", "tap", 0.5 }, { "charge_lv3", "tap", 0.7 },
+    { "charge_max", "tap", 0.8 }, { "charge_1st", "tap", 0.35 }, { "charge_2nd", "tap", 0.5 },
+    { "just_guard", "hit", 0.9 }, { "just_dodge", "tap", 0.5 }, { "mikiri", "hit", 0.9 }, { "parry", "hit", 0.8 },
+    { "guard", "hit", 0.7 }, { "kijin", "tap", 0.6 }, { "lv_up", "tap", 0.6 }, { "success", "tap", 0.6 },
+    { "shot", "tap", 0.55 }, { "launch", "tap", 0.5 }, { "burst", "hit", 0.8 }, { "blast", "hit", 0.8 },
+    { "pile", "hit", 0.8 }, { "ryuugeki", "hit", 1.0 }, { "reload", "tap", 0.35 }, { "dmg", "hit", 0.8 },
+    { "efx", "tap", 0.45 },
+}
+S.btPresetMode = 1   -- 0: off, 1: by preset name (default), 2: legacy (the game's own rumble)
+local presetClass = {}   -- [preset addr] = { kind, k } or false
+
+local function classify_preset(args)
+    local addr = sdk.to_int64(args[4]) or 0
+    if addr == 0 then return nil end
+    local c = presetClass[addr]
+    if c ~= nil then return c end
+    c = false
+    local p = sdk.to_managed_object(args[4])
+    if p then
+        local okh, h = pcall(p.get_field, p, "_VibAudioSource")
+        local path = okh and h and holder_path(h) or nil
+        local okv, vol = pcall(p.get_field, p, "_Volume")
+        if path then
+            local n = path:lower():match("([^/]+)%.vsrc$") or path:lower()
+            for _, r in ipairs(PRESET_RULES) do
+                if n:find(r[1], 1, true) then
+                    if r[2] then
+                        -- the game's own authored volume (dB) scales the strength: -10 dB -> x0.6, +6 dB -> x1.3
+                        local db = (okv and type(vol) == "number") and vol or 0
+                        local g = math.max(0.5, math.min(1.4, 10 ^ (db / 40)))
+                        c = { kind = r[2], k = r[3] * g, name = n }
+                    else
+                        c = { kind = "none", name = n }
+                    end
+                    break
+                end
+            end
+            if not c then c = { kind = "tap", k = 0.3, name = n } end   -- unknown: a soft tap
+        end
+    end
+    presetClass[addr] = c
+    return c
+end
+
+local function bt_preset_fx(args)
+    local c = classify_preset(args)
+    if not c or c.kind == "none" then return end
+    S.lastBtPreset = c.name
+    S.btPresetLogs = (S.btPresetLogs or 0) + 1
+    if S.btPresetLogs <= 5 then log.info(string.format("[HapticPack][BT] game haptic '%s' -> %s %.2f", c.name, c.kind, c.k or 0)) end
+    if c.kind == "hit" then
+        hit_wave(c.k, 0.14)
+    else
+        local k = c.k * S.btHapticPulse * 2.2
+        pulse("heavy", k, 0.06); pulse("light", k * 0.8, 0.06)
+    end
+end
+
 local function game_vib_to_rumble(args)
     local t = os.clock()
     if t - S.lastGameVib < 0.025 then return end
@@ -1093,7 +1397,7 @@ end
 -- Play one DualSense-style impact wave (used for every game vibration source)
 hit_wave = function(s0, d0)
     local w = WEAPON_HIT[S.kind or ""] or { k = 1.0, dk = 1.0 }
-    local k = s0 * S.gameVibGain * w.k
+    local k = s0 * (S.btBridge and S.btHitGain or S.gameVibGain) * w.k
     local d = math.max(0.16, d0 * w.dk)
     S.lastHitK, S.lastHitD = k, d
     -- 1) kick: both motors full for 60ms (ERM motors need ~40ms to reach full force)
@@ -1137,7 +1441,9 @@ end
 
 sdk.hook(TRIG_M, function(args)
     if self_vib then return end
-    if S.out == "rumble" and S.gameVibOn then game_vib_to_rumble(args) end
+    if S.catalogOn then pcall(catalog_record, args) end
+    if S.btBridge and S.btPresetMode == 1 then pcall(bt_preset_fx, args) end
+    if S.gameVibOn and (S.out == "rumble" or (S.btBridge and S.btGameHaptics)) then game_vib_to_rumble(args) end
     if S.cbGuarding then S.cbGuardHit = true end   -- game vibrates while guarding = blocked hit / Guard Point
     if S.gunFiring then S.gunShotPending = true end  -- game vibrates while the gun trigger is held = one shot
     -- Outside of charges: capture once. While charging: take the latest pattern, at most ~7 times per second
@@ -1248,6 +1554,15 @@ local function on_weapon_changed(td)
     S.timerIdx = ti and (ti + 1) or 1
     log.info(string.format("[HapticPack] %s: %d field, level=%s, timer=%s", S.typeName, #S.fields,
         S.fieldNames[S.levelIdx], S.fieldNames[S.timerIdx]))
+    S.flog = {}   -- per-field state of the field-change log
+    if S.fieldLogOn and td then
+        log.info(string.format("[HapticPack][rec] ===== WEAPON %s (%d fields) =====", S.typeName, #S.fields))
+        local line = {}
+        for i, f in ipairs(S.fields) do
+            line[#line + 1] = f.name .. "[" .. f.kind .. "]"
+            if #line == 8 or i == #S.fields then log.info("[HapticPack][rec] fields: " .. table.concat(line, "  ")); line = {} end
+        end
+    end
 end
 
 local function read_field(idx)
@@ -1319,14 +1634,14 @@ local function ensure_sound_hook()
         return
     end
     sdk.hook(m, function(args)
-        if S.out == "rumble" and S.gameVibOn then
+        if body_via_motors() and S.gameVibOn then
             local mine = (not S.myGoAddr) or S.goFilterOff or (sdk.to_int64(args[4]) or 0) == S.myGoAddr
             -- rumble controllers: the game sends no haptics, so guard hits are unknown => use your own sound events
             if mine and S.cbGuarding then
                 local cg = S.kind and CFG[S.kind]
                 if cg and cg.soundGuardHit then S.cbGuardHit = true end
             end
-            if mine or S.soundAll then
+            if mine or (S.soundAll and not S.btBridge) then
                 S.vibSrc.sound = S.vibSrc.sound + 1
                 local t = os.clock()
                 if t - (S.lastSoundHit or -10) > 0.05 then
@@ -1934,7 +2249,16 @@ local function update_sa(now, c, pad)
     -- ---- Switch gauge reload: jump >= 30% of the highest value, at least 1.5s apart ----
     local g, gPrev = rule_value("gauge")
     if g then S.saGaugeMax = math.max(S.saGaugeMax or 0, g) end
-    if c.reloadOn and g and gPrev and S.saGaugeMax and S.saGaugeMax > 0
+    -- A real gauge sits still most of the time; a timer (e.g. _SlashGaugeAutoRecoveryTimer) changes
+    -- every frame and loops. If the field changes on most frames, it is a timer: never treat it as a reload.
+    if g and gPrev then
+        local changed = (math.abs(g - gPrev) > 1e-4) and 1 or 0
+        S.saGChg = (S.saGChg or 0) * 0.95 + changed * 0.05
+        S.saGFrames = (S.saGFrames or 0) + 1
+    end
+    -- also wait ~0.5 s after equipping so the first reading isn't taken as a reload
+    local gaugeIsTimer = (S.saGChg or 0) > 0.6 or (S.saGFrames or 0) < 30
+    if c.reloadOn and not gaugeIsTimer and g and gPrev and S.saGaugeMax and S.saGaugeMax > 0
        and g - gPrev >= 0.3 * S.saGaugeMax and now - (S.saLastReload or -10) > 1.5 then
         S.saLastReload = now
         start_haptics(now, c.reloadHaptics, 0.06)
@@ -3038,14 +3362,82 @@ end
 -- =============================================
 -- MAIN LOOP
 -- =============================================
+-- =============================================
+-- DUALSENSE BLUETOOTH BRIDGE (optional plugin reframework/plugins/MHWHapticBT.dll)
+-- The plugin writes reframework/data/MHWHapticBT_status.json every second; we read it every 2 s.
+-- When it reports a DualSense on Bluetooth, body effects are sent as motor requests, which the plugin
+-- turns into real haptics. Settings for the plugin go to MHWHapticBT_config.json.
+-- =============================================
+S.bt, S.btLive, S.btLastTick, S.btTickSeenAt, S.btLastRead = nil, false, nil, -10.0, -10.0
+S.btMode = "auto"                 -- "auto" | "off"
+local BT_DEFAULTS = { enabled = true, triggers = true, gain = 0.6, heavyHz = 55, lightHz = 150, holdMs = 70,
+                      swap = false, unsignedPcm = false, testPulse = 0, trigGain = 1.3,
+                      hitGain = 0.55, pulseGain = 0.3, gameHaptics = false,
+                      flags11 = 0xFE, trigRefreshMs = 500, waveMode = 2, testTrigger = 0,
+                      keepAliveMs = 20000, prerollReports = 3, curveK = 1.8, releaseMs = 45, leftTrig = 0, presetMode = 1, gameRumble = 0 }
+local BTCFG = {}
+for k, v in pairs(BT_DEFAULTS) do BTCFG[k] = v end
+if type(SAVE.bt) == "table" then
+    for k, v in pairs(SAVE.bt) do if BT_DEFAULTS[k] ~= nil and type(v) == type(BT_DEFAULTS[k]) then BTCFG[k] = v end end
+    -- settings that were only exposed in test builds always come back to their tuned defaults
+    for _, k in ipairs({ "flags11", "waveMode", "keepAliveMs", "prerollReports", "trigRefreshMs", "holdMs", "unsignedPcm", "gameHaptics" }) do
+        BTCFG[k] = BT_DEFAULTS[k]
+    end
+end
+if SAVE.btMode == "off" or SAVE.btMode == "auto" then S.btMode = SAVE.btMode end
+if not SAVE.btHitFix then
+    if BTCFG.hitGain and BTCFG.hitGain < 0.5 then BTCFG.hitGain = BT_DEFAULTS.hitGain end
+    SAVE.btHitFix = true
+    SAVE.bt = BTCFG
+    pcall(json.dump_file, SAVE_FILE, SAVE)
+end
+S.btHitGain = BTCFG.hitGain
+S.btPresetMode = BTCFG.presetMode or 1
+BTCFG.gameRumble = (S.btPresetMode == 2) and 1 or 0
+S.fieldLogOn = false   -- research tool (field-change log), off in release builds
+S.btHitGain, S.btHapticPulse, S.btGameHaptics = BTCFG.hitGain, BTCFG.pulseGain, BTCFG.gameHaptics
+
+local function save_bt()
+    BTCFG.enabled = S.btMode ~= "off"
+    SAVE.bt, SAVE.btMode = BTCFG, S.btMode
+    pcall(json.dump_file, SAVE_FILE, SAVE)
+    local ok, err = pcall(json.dump_file, "MHWHapticBT_config.json", BTCFG)
+    if not ok then log.info("[HapticPack][BT] could not write MHWHapticBT_config.json: " .. tostring(err)) end
+end
+save_bt()   -- make sure the plugin sees the current settings on start
+
+local function update_bt(now)
+    if now - S.btLastRead < 2.0 then return end
+    S.btLastRead = now
+    local ok, st = pcall(json.load_file, "MHWHapticBT_status.json")
+    if not ok or type(st) ~= "table" then
+        if S.bt ~= nil then log.info("[HapticPack][BT] status file gone -> bridge off") end
+        S.bt, S.btLive = nil, false
+    else
+        S.bt = st
+        if st.tick ~= S.btLastTick then S.btLastTick, S.btTickSeenAt = st.tick, now end
+        -- the status file stays on disk after the game closes: only trust it while it keeps updating
+        S.btLive = now - S.btTickSeenAt < 5.0
+    end
+    local want = S.btMode ~= "off" and S.btLive and S.bt ~= nil and S.bt.bluetooth == true and S.bt.open == true
+                 and S.out == "dualsense"
+    if want ~= S.btBridge then
+        S.btBridge = want
+        log.info(string.format("[HapticPack][BT] bridge %s (plugin live=%s bluetooth=%s open=%s out=%s mode=%s)",
+            want and "ON: body effects -> motor requests -> plugin haptics" or "OFF",
+            tostring(S.btLive), tostring(S.bt and S.bt.bluetooth), tostring(S.bt and S.bt.open), S.out, S.btMode))
+    end
+end
+
 local perf = { last = 0.0, avg = 0.0, peak = 0.0, peakAt = 0.0 }
 
 local function frame_body()
     local now = now_s()
     local pad = get_pad()
     update_detect(now, pad)
+    update_bt(now)
     process_pulses()
-    if S.out == "rumble" and S.gameVibOn then
+    if body_via_motors() and S.gameVibOn then
         if S.motorHookOn and not S.motorHook then ensure_motor_hook() end
         if not S.soundHookInstalled then ensure_sound_hook() end
         process_game_motor()
@@ -3112,7 +3504,8 @@ local function frame_body()
         S.lsIai, S.lsKijin, S.lsArmed, S.lsLvUp = false, false, false, false
         for k in pairs(evState) do evState[k] = nil end
         S.gunDelayed, S.ignStart, S.gunShots = {}, nil, 0
-        S.saModeCand, S.saModeStable, S.saGaugeMax, S.disSeen = nil, nil, nil, nil
+        S.saModeCand, S.saModeStable, S.saGaugeMax, S.disSeen, S.saGChg = nil, nil, nil, nil, nil
+        S.saGFrames = 0
         S.vibWhy = {}
     end
 
@@ -3130,6 +3523,98 @@ local function frame_body()
     local c = kind and CFG[kind]
     if c and pad and wh then
         if c.module then c.update(now, c, pad) else update_charge(now, c, pad) end
+    end
+
+    -- Field-change LOG (research): every change of every weapon field goes to re2_framework_log.txt,
+    -- together with the effects the mod fires, so real field names can replace the guessed patterns.
+    -- Fields that change many times per second (timers) are muted after 3 lines and reported once.
+    if S.fieldLogOn and wh then
+        S.flog = S.flog or {}
+        S.flogT0 = S.flogT0 or now
+        local t = now - S.flogT0
+        for _, f in ipairs(S.fields) do
+            local ok, v = pcall(wh.get_field, wh, f.name)
+            if ok then
+                if type(v) == "boolean" then v = v and 1 or 0 end
+                v = tonumber(v)
+                if v ~= nil then
+                    local st = S.flog[f.name]
+                    if not st then S.flog[f.name] = { last = v, sec = math.floor(t), n = 0, muted = false, quietSince = t }
+                    elseif math.abs(v - st.last) > 1e-4 then
+                        local sec = math.floor(t)
+                        if sec ~= st.sec then st.sec, st.n = sec, 0 end
+                        st.n = st.n + 1
+                        if st.muted then
+                            st.quietSince = t
+                        elseif st.n > 3 then
+                            st.muted, st.quietSince = true, t
+                            log.info(string.format("[HapticPack][rec] %8.2f %s changes every frame (timer-like) -> muted", t, f.name))
+                        else
+                            local fv = f.kind == "float" and string.format("%.3f -> %.3f", st.last, v) or string.format("%d -> %d", math.floor(st.last), math.floor(v))
+                            log.info(string.format("[HapticPack][rec] %8.2f %-36s %s", t, f.name, fv))
+                        end
+                        st.last = v
+                    elseif st.muted and t - st.quietSince > 3 then
+                        st.muted = false
+                        log.info(string.format("[HapticPack][rec] %8.2f %s stopped changing = %s", t, f.name, tostring(v)))
+                    end
+                end
+            end
+        end
+        if S.ev ~= S.flogEv then
+            S.flogEv = S.ev
+            if S.ev and S.ev ~= "" then log.info(string.format("[HapticPack][rec] %8.2f   >>> MOD EFFECT: %s", t, tostring(S.ev))) end
+        end
+        if pad then
+            local r2 = (S.rt or 0) > 0.5
+            if r2 ~= S.flogR2 then S.flogR2 = r2; log.info(string.format("[HapticPack][rec] %8.2f   [R2 %s]", t, r2 and "pressed" or "released")) end
+            local l2 = (S.lt or 0) > 0.5
+            if l2 ~= S.flogL2 then S.flogL2 = l2; log.info(string.format("[HapticPack][rec] %8.2f   [L2 %s]", t, l2 and "pressed" or "released")) end
+        end
+    end
+
+    -- Field recorder: logs every change of every weapon field while recording (to find the REAL field names)
+    if S.rec and wh then
+        local r = S.rec
+        if not r.t0 then r.t0 = now; r.stopAt = now + (r.dur or 60) end
+        if now > r.stopAt then
+            S.rec = nil
+            local out = { version = VERSION, weapon = r.kind, handling = r.tname, seconds = fmt("%.1f", now - r.t0),
+                          note = "Fields sorted by number of changes. Each event = time(s):value", fields = {} }
+            local list = {}
+            for _, f in pairs(r.f) do list[#list + 1] = f end
+            table.sort(list, function(a, b) return a.n > b.n end)
+            for _, f in ipairs(list) do
+                if f.n > 0 then
+                    out.fields[#out.fields + 1] = fmt("%-40s [%s] changes=%d min=%s max=%s start=%s | %s", f.name, f.kind, f.n,
+                        tostring(f.min), tostring(f.max), tostring(f.v0), table.concat(f.ev, " "))
+                end
+            end
+            out.unchanged = {}
+            for _, f in ipairs(list) do if f.n == 0 then out.unchanged[#out.unchanged + 1] = fmt("%s [%s] = %s", f.name, f.kind, tostring(f.v0)) end end
+            local fname = "MHWilds_field_record_" .. tostring(r.kind) .. ".json"
+            local ok = pcall(json.dump_file, fname, out)
+            S.ev = fmt("Field record saved: %s (%d fields changed)", fname, #out.fields)
+            log.info("[HapticPack] field record -> reframework/data/" .. fname .. (ok and "" or " FAILED"))
+        else
+            for _, f in ipairs(S.fields) do
+                local ok, v = pcall(wh.get_field, wh, f.name)
+                if ok then
+                    if type(v) == "boolean" then v = v and 1 or 0 end
+                    v = tonumber(v)
+                    if v ~= nil then
+                        local e = r.f[f.name]
+                        if not e then e = { name = f.name, kind = f.kind, n = 0, v0 = v, last = v, min = v, max = v, ev = {} }; r.f[f.name] = e
+                        elseif math.abs(v - e.last) > 1e-4 then
+                            -- floats that drift every frame (timers) are capped so the file stays readable
+                            e.n = e.n + 1; e.last = v
+                            if v < e.min then e.min = v end; if v > e.max then e.max = v end
+                            if #e.ev < 40 then e.ev[#e.ev + 1] = fmt("%.2f:%s", now - r.t0, f.kind == "float" and fmt("%.2f", v) or tostring(math.floor(v))) end
+                        end
+                    end
+                end
+            end
+        end
     end
 
     -- Update the field viewer (only while the menu is open, so it costs nothing in play)
@@ -3150,6 +3635,10 @@ end
 
 S.enabled = true
 re.on_frame(function()
+    if catalogDirty and S.catalogOn then
+        local t = os.clock()
+        if t - (S.catalogSaved or 0) > 30 then S.catalogSaved = t; pcall(save_catalog, true) end
+    end
     frameNo = frameNo + 1
     if not S.enabled then return end
     local t0 = clock()
@@ -3282,6 +3771,7 @@ re.on_draw_ui(function()
 
     local cl
     cl, S.lite = imgui.checkbox("Lite mode (co-op) — NOTE: makes charge-hold vibration sparser and weaker", S.lite)
+
     if cl then SAVE.lite = S.lite; pcall(json.dump_file, SAVE_FILE, SAVE) end
 
     -- ---- weapon ----
@@ -3377,6 +3867,63 @@ re.on_draw_ui(function()
         if imgui.button("Test right trigger rumble") then pulse("trigR", 0.9, 0.3) end
         imgui.same_line()
         if imgui.button("Test haptic") then play_haptic() end
+        imgui.tree_pop()
+    end
+
+    if imgui.tree_node("DualSense over Bluetooth (MHWHapticBT plugin)") then
+        local st = S.bt
+        if not st then
+            imgui.text("Plugin not detected. Put MHWHapticBT.dll in reframework/plugins and restart the game.")
+        else
+            imgui.text(fmt("Plugin %s  |  bridge: %s  |  DualSense found: %s  Bluetooth: %s", tostring(st.version),
+                S.btBridge and "ON" or "OFF", tostring(st.found), tostring(st.bluetooth)))
+            if st.found and not st.bluetooth then imgui.text("  USB cable: the game plays its own haptics, the plugin stays idle.") end
+        end
+        local modes = { "auto", "off" }
+        local mi = (S.btMode == "off") and 2 or 1
+        local cm, nm = imgui.combo("Bluetooth bridge", mi, { "Auto (when the plugin finds a Bluetooth DualSense)", "Off" })
+        if cm then S.btMode = modes[nm]; save_bt() end
+        local ch = {}
+        local function mark(c) ch[#ch + 1] = c end
+        local c, v
+        c, BTCFG.gain = imgui.slider_float("BT haptics: strength", BTCFG.gain, 0.1, 2.0); mark(c)
+        c, BTCFG.hitGain = imgui.slider_float("BT: hit strength", BTCFG.hitGain, 0.1, 1.5); mark(c)
+        c, BTCFG.pulseGain = imgui.slider_float("BT: haptic beat strength", BTCFG.pulseGain, 0.1, 1.5); mark(c)
+        c, BTCFG.curveK = imgui.slider_float("BT: strength curve (higher = weak and strong closer)", BTCFG.curveK, 0.3, 2.5); mark(c)
+        c, BTCFG.releaseMs = imgui.slider_float("BT: fade-out between hits (ms)", BTCFG.releaseMs, 5, 150); mark(c)
+        c, BTCFG.heavyHz = imgui.slider_float("BT haptics: heavy tone (Hz)", BTCFG.heavyHz, 20, 120); mark(c)
+        c, BTCFG.lightHz = imgui.slider_float("BT haptics: light tone (Hz)", BTCFG.lightHz, 80, 320); mark(c)
+        c, v = imgui.combo("BT: game haptics", (BTCFG.presetMode or 1) + 1,
+            { "Off (only the mod's weapon effects)", "By name: hits, charges, guards (recommended)", "Legacy: game's own rumble (everything vibrates)" })
+        if c then BTCFG.presetMode = v - 1 end; mark(c)
+        BTCFG.gameRumble = (BTCFG.presetMode == 2) and 1 or 0
+        S.btPresetMode = BTCFG.presetMode
+        c, BTCFG.triggers = imgui.checkbox("BT: send adaptive triggers too", BTCFG.triggers); mark(c)
+        c, BTCFG.trigGain = imgui.slider_float("BT: trigger force multiplier", BTCFG.trigGain, 0.5, 2.0); mark(c)
+        c, v = imgui.combo("BT: L2 trigger", (BTCFG.leftTrig or 0) + 1,
+            { "Free (Focus Mode stays light)", "Game effects, light", "Game effects, full force" })
+        if c then BTCFG.leftTrig = v - 1 end; mark(c)
+        c, BTCFG.swap = imgui.checkbox("BT: swap left/right actuators", BTCFG.swap); mark(c)
+        S.btHitGain, S.btHapticPulse, S.btGameHaptics = BTCFG.hitGain, BTCFG.pulseGain, BTCFG.gameHaptics
+        for _, x in ipairs(ch) do if x then save_bt(); break end end
+        if not BTCFG.triggers then imgui.text_colored(tr("  ! 'BT: send adaptive triggers too' is OFF - game triggers are not sent over Bluetooth"), 0xFF40A0FF) end
+        if imgui.button("Test: vibration") then
+            BTCFG.testPulse = (BTCFG.testPulse or 0) + 1; save_bt()
+        end
+        imgui.same_line()
+        if imgui.button("Test: trigger wall 3 s (hold R2/L2)") then
+            BTCFG.testTrigger = (BTCFG.testTrigger or 0) + 1; save_bt()
+        end
+        imgui.same_line()
+        if imgui.button("Reset Bluetooth settings to defaults") then
+            local tp, tt = BTCFG.testPulse, BTCFG.testTrigger
+            for k, dv in pairs(BT_DEFAULTS) do BTCFG[k] = dv end
+            BTCFG.testPulse, BTCFG.testTrigger = tp, tt
+            S.btHitGain, S.btHapticPulse, S.btGameHaptics = BTCFG.hitGain, BTCFG.pulseGain, BTCFG.gameHaptics
+            S.btPresetMode = BTCFG.presetMode
+            save_bt()
+        end
+        imgui.text("Log for bug reports: reframework/data/MHWHapticBT.log")
         imgui.tree_pop()
     end
 
