@@ -1,2 +1,0 @@
--- Haptic Pads
--- Only Steam Deck and Steam Controller have them

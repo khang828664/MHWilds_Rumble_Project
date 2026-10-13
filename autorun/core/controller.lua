@@ -1,0 +1,3 @@
+-- Detect controller ID and Hardware capabilities in order to load correct functions.
+-- When the code detects a new controller, append the data to a save file, including controller name, its hardwares, and rumble/haptic config.
+-- The process enables the user to use many different controller with its own settings.
